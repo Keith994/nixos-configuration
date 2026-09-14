@@ -1,0 +1,6 @@
+_G.utils = require("util")
+_G.TSUtils = require("util.treesitter")
+require("config.autocmds")
+require("config.options")
+require("config.keymaps")
+require("config.emacs-keys")

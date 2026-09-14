@@ -1,0 +1,147 @@
+window-rule {
+    background-effect {
+        blur true
+    }
+}
+window-rule {
+   match is-floating=true
+   focus-ring {
+        width 2
+        // active-color "#9b0000"
+        inactive-color "#505050"
+       active-gradient from="#80c8ff" to="#9b0000" angle=45
+    }
+   // baba-is-float true // 会上下轻微浮动
+}
+
+window-rule {
+    match title="图片和视频"
+    match title="朋友圈"
+    match title="微信"
+    exclude  app-id="wechat"
+    open-floating true
+}
+
+window-rule {
+    match app-id="org\\.wezfurlong\\.wezterm"
+    match app-id="Alacritty"
+    match app-id="com\\.mitchellh\\.ghostty"
+    match app-id="kitty"
+    default-column-width {
+     proportion 0.555
+    }
+}
+window-rule {
+    match app-id="xyz\\.chatboxapp\\.app"
+    match app-id="obsidian"
+    default-column-width {
+     proportion 0.50
+    }
+}
+window-rule {
+    opacity 0.90
+}
+window-rule {
+    match is-active=false
+    opacity 0.80
+}
+
+window-rule {
+    match app-id=".*fcitx5.*"
+    match app-id="firefox" title="我的足迹"
+    match app-id="firefox$" title="画中画"
+    match app-id="xarchiver"
+    match app-id="firefox$" title="^Picture-in-Picture$"
+    open-floating true
+}
+
+workspace "chat" {
+    open-on-output "eDP-1"
+}
+
+workspace "program_develop" {
+    open-on-output "eDP-1"
+}
+
+workspace "browser" {
+    open-on-output "eDP-1"
+}
+
+
+window-rule {
+    match app-id="Bytedance-feishu"
+    match app-id="[fF]eishu"
+    // open-on-workspace "chat"
+    open-maximized true
+}
+
+window-rule {
+    match app-id="[fF]eishu"
+    match title="图片"
+    open-maximized true
+}
+
+window-rule {
+    match app-id="com.tmux.ghostty"
+    open-on-workspace "program_develop"
+    open-maximized false
+}
+
+window-rule {
+    match app-id="firefox"
+    open-on-workspace "browser"
+    open-maximized true
+}
+
+window-rule {
+    match app-id="^com\\.obsproject\\.Studio$"
+    min-width 876
+}
+window-rule {
+    geometry-corner-radius 12
+    clip-to-geometry true
+    draw-border-with-background false
+}
+
+window-rule {
+    match app-id="^dropdown$"
+    open-floating true
+    // 锚定到屏幕的上边缘。
+    default-floating-position x=0 y=0 relative-to="top"
+    // 屏幕高度的一半。
+    default-window-height {
+        proportion 0.55
+    }
+    // 屏幕宽度的 80%。
+    default-column-width {
+        proportion 0.93
+    }
+}
+window-rule {
+    match title="^致景科技会议$"
+    match app-id="Meeting"
+    // open-floating false
+    // block-out-from "screencast"
+    open-focused false
+    // Open it as floating.
+    open-floating true
+    // Anchor to the top edge of the screen.
+    default-floating-position x=0 y=0 relative-to="top-left"
+}
+window-rule {
+    match app-id="wechat"
+    //解决搜索框失去焦点问题
+    open-focused false
+}
+window-rule {
+    match app-id="terminal_app"
+    match app-id="btop_terminal"
+    match app-id="yazi_terminal"
+    open-floating true
+    default-window-height {
+        proportion 0.93
+    }
+    default-column-width {
+        proportion 0.93
+    }
+}

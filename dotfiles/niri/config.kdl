@@ -1,0 +1,61 @@
+prefer-no-csd
+clipboard { disable-primary; }
+cursor { xcursor-size 24; hide-when-typing; }
+input {
+    keyboard {
+        repeat-delay 200
+        repeat-rate 25
+        xkb {
+            layout "us"
+            // options "caps:ctrl_modifier,ctrl:swapcaps"
+        }
+    }
+    touchpad {
+        tap
+        natural-scroll
+        accel-speed 0.2
+        scroll-method "two-finger"
+    }
+    warp-mouse-to-focus
+ // focus-follows-mouse max-scroll-amount="95%"
+}
+debug {
+    // honor-xdg-activation-with-invalid-serial
+    // disable-monitor-names
+    // render-drm-device "/dev/dri/card1"
+    // ignore-drm-device "/dev/dri/renderD128"
+    // ignore-drm-device "/dev/dri/renderD130"
+    // force-pipewire-invalid-modifier
+    // dbus-interfaces-in-non-session-instances
+    wait-for-frame-completion-before-queueing
+    // preview-render "screencast"
+    // enable-overlay-planes
+    deactivate-unfocused-windows
+    disable-cursor-plane true
+}
+hotkey-overlay { skip-at-startup; hide-not-bound; }
+screenshot-path "/tmp/niri-screenshots.png"
+gestures {
+    hot-corners {
+       off
+    }
+}
+
+include "vm-alt.kdl"
+include "monitors.kdl"
+include "rules.kdl"
+include "animation.kdl"
+include "environment.kdl"
+include "keys.kdl"
+include "layouts.kdl"
+include "dms/layout.kdl"
+include "dms/alttab.kdl"
+include "dms/colors.kdl"
+include "dms/wpblur.kdl"
+include "dms/cursor.kdl"
+include "dms/windowrules.kdl"
+include "dms/binds.kdl"
+include "dms/outputs.kdl"
+include "dms/windowrules.kdl"
+
+include "startup.kdl"

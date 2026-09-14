@@ -1,0 +1,55 @@
+
+layer-rule {
+    match layer="top"
+    match layer="overlay"
+
+    // background-effect {
+    //     xray false
+    // }
+}
+layer-rule {
+    match namespace="^quickshell$"
+    place-within-backdrop true
+}
+layer-rule {
+    match namespace="^notifications$"
+    block-out-from "screencast"
+}
+layer-rule {
+    match namespace="^launcher$"
+    shadow {
+        on
+    }
+    // Fuzzel 默认设置为 10 像素圆角。
+    geometry-corner-radius 12
+}
+layout {
+    gaps 0.5
+    center-focused-column "never"
+    // always-center-single-column
+    preset-column-widths {
+        proportion 0.5
+        proportion 1.0
+        // proportion 0.66667
+        // proportion 1.0
+    }
+    preset-window-heights {
+        proportion 0.33333
+        proportion 0.5
+        proportion 1.0
+    }
+    shadow {
+        on
+        draw-behind-window false
+        softness 40
+        spread 5
+        offset x=0 y=5
+        color "#0007"
+    }
+    struts {
+        left    1
+        right   1
+        top     1
+        bottom  1
+    }
+}

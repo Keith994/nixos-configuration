@@ -1,0 +1,123 @@
+binds {
+    // ── 系统 / 输入法 ──────────────────────────────────────────
+    Mod+0 { spawn-sh "fcitx5 -r -d & disown"; }
+
+    // ── 帮助 / 热键提示 ────────────────────────────────────────
+    Mod+Shift+Slash { show-hotkey-overlay; }
+
+    // ── 终端 ──────────────────────────────────────────────────
+    // Mod+Return hotkey-overlay-title="Open a Terminal" { spawn-sh "ghostty +new-window -e ~/.local/bin/zellij_switch dev || ghostty -e ~/.local/bin/zellij_switch dev"; }
+    // Mod+Return hotkey-overlay-title="Open a Kitty Terminal" { spawn-sh "ghostty +new-window"; }
+    Mod+Return hotkey-overlay-title="Open a Terminal" { spawn-sh "ghostty +new-window -e tmux new-session -A -s main || ghostty -e  tmux new-session -A -s main"; }
+    Mod+Shift+Return hotkey-overlay-title="Open a Kitty Terminal" { spawn-sh "kitty"; }
+    Mod+Ctrl+Return hotkey-overlay-title="Open a Quick Terminal" { spawn-sh "ghostty +toggle-quick-terminal"; }
+
+    // ── 音量 / 亮度（锁屏可用）────────────────────────────────
+    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "dms ipc call audio decrement 3"; }
+    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "dms ipc call audio increment 3"; }
+    XF86AudioMicMute allow-when-locked=true { spawn-sh "dms ipc call audio micmute"; }
+    XF86AudioMute allow-when-locked=true { spawn-sh "dms ipc call audio mute"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn-sh "dms ipc call brightness decrement 5 '' "; }
+    XF86MonBrightnessUp allow-when-locked=true { spawn-sh "dms ipc call brightness increment 5 '' "; }
+
+    // ── 窗口 / 布局 ───────────────────────────────────────────
+    Mod+A hotkey-overlay-title="Over view" repeat=false { toggle-overview; }
+    Mod+B hotkey-overlay-title="System Monitor" repeat=false { spawn-sh "footclient --app-id btop_terminal -- btop"; }
+    Mod+C hotkey-overlay-title="Center Column" { center-column; }
+    Mod+Shift+C hotkey-overlay-title="Center Visible Window Column" { center-visible-columns;}
+    Mod+M hotkey-overlay-title="Maximize Column" { maximize-column; }
+    Mod+Shift+M hotkey-overlay-title="FullScreen" { fullscreen-window; }
+    Mod+F hotkey-overlay-title="Toggle Float" { spawn-sh "~/.config/niri/scripts/float.sh"; }
+    Mod+O hotkey-overlay-title="Toggle Opacity" { toggle-window-rule-opacity; }
+    Mod+Q hotkey-overlay-title="Close Window or Minimize to Tray" repeat=false { close-window; }
+
+    // ── 列 / 窗口尺寸 ─────────────────────────────────────────
+    Mod+R hotkey-overlay-title="Switch Column Width(0.333,0.667) Between Preset" { switch-preset-column-width; }
+    Mod+Shift+R hotkey-overlay-title="Switch Column Preset Height(0.333,0.667,1.0) Between Preset" { switch-preset-window-height; }
+    Mod+Minus hotkey-overlay-title="Decrease column width by 10%" { set-column-width "-10%"; }
+    Mod+Equal hotkey-overlay-title="Increase column width by 10%" { set-column-width "+10%"; }
+    Mod+Shift+Minus hotkey-overlay-title="Decrease column height by 10%" { set-window-height "-10%"; }
+    Mod+Shift+Equal hotkey-overlay-title="Increase column height by 10%" { set-window-height "+10%"; }
+
+    // ── 焦点移动 ──────────────────────────────────────────────
+    Mod+H { focus-column-or-monitor-left; }
+    Mod+K { focus-window-or-workspace-down; }
+    Mod+J { focus-window-or-workspace-up; }
+    Mod+L { focus-column-or-monitor-right; }
+    Mod+Home { focus-column-first; }
+    Mod+End { focus-column-last; }
+
+    // ── 移动窗口 / 列 ─────────────────────────────────────────
+    Mod+Shift+H { move-column-left-or-to-monitor-left; }
+    Mod+Shift+J { move-window-down-or-to-workspace-down; }
+    Mod+Shift+K { move-window-up-or-to-workspace-up; }
+    Mod+Shift+L { move-column-right-or-to-monitor-right; }
+    Mod+Shift+Home { move-column-to-first; }
+    Mod+Shift+End { move-column-to-last; }
+
+    // ── 工作区切换 ────────────────────────────────────────────
+    Mod+1 { focus-workspace 1; }
+    Mod+2 { focus-workspace 2; }
+    Mod+3 { focus-workspace 3; }
+    Mod+4 { focus-workspace 4; }
+    Mod+5 { focus-workspace 5; }
+    Mod+6 { focus-workspace 6; }
+    Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
+    Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
+
+    // ── 移动列到工作区 ────────────────────────────────────────
+    Mod+Shift+1 { move-column-to-workspace 1; }
+    Mod+Shift+2 { move-column-to-workspace 2; }
+    Mod+Shift+3 { move-column-to-workspace 3; }
+    Mod+Shift+4 { move-column-to-workspace 4; }
+    Mod+Shift+5 { move-column-to-workspace 5; }
+    Mod+Shift+6 { move-column-to-workspace 6; }
+    Mod+Shift+7 { move-column-to-workspace 7; }
+    Mod+Shift+8 { move-column-to-workspace 8; }
+    Mod+Shift+9 { move-column-to-workspace 9; }
+    Mod+Shift+Page_Down { move-workspace-down; }
+    Mod+Shift+Page_Up { move-workspace-up; }
+
+    // ── 多显示器 ──────────────────────────────────────────────
+    Mod+Ctrl+H { focus-monitor-left; }
+    Mod+Ctrl+L { focus-monitor-right; }
+    Mod+Ctrl+Shift+H { move-column-to-monitor-left; }
+    Mod+Ctrl+Shift+L { move-column-to-monitor-right; }
+
+    // ── 列 / 窗口吞噬与弹出 ───────────────────────────────────
+    Mod+BracketLeft { consume-or-expel-window-left; }
+    Mod+BracketRight { consume-or-expel-window-right; }
+
+    // ── 截图 / 录屏 ───────────────────────────────────────────
+    Mod+Shift+S hotkey-overlay-title="SnapShot Area Via grim" { spawn-sh "grim -g \"$(slurp -d -c '#7fc8ff')\" - | satty --filename -"; }
+    Mod+Ctrl+S hotkey-overlay-title="Edit SnapShot From Temp Via Satty" { spawn "satty" "-f" "/tmp/niri-screenshots.png"; }
+    Mod+F12 hotkey-overlay-title="SnapShot Window" { spawn-sh "satty-screenshot.sh screenshot-window"; }
+    Mod+Shift+F12 hotkey-overlay-title="SnapShot Screen" { spawn-sh "satty-screenshot.sh screenshot-screen"; }
+
+    // ── 启动器 / 面板 ─────────────────────────────────────────
+    Mod+Space hotkey-overlay-title="Spot light" { spawn-sh "dms ipc call spotlight toggle"; }
+    Mod+Shift+Space { spawn-sh "dms ipc call spotlight-bar toggle"; }
+    Mod+E hotkey-overlay-title="File Manager" repeat=false { spawn-sh "footclient --app-id yazi_terminal -- yazi"; }
+    Mod+Shift+E hotkey-overlay-title="Edit with emacs" repeat=false { spawn-sh "doom +everywhere"; }
+    Mod+I hotkey-overlay-title="System settings" { spawn-sh "dms ipc call settings toggle"; }
+    Mod+W hotkey-overlay-title="Select a Wallpaper" { spawn-sh "dms ipc wallpaperCarousel toggle";}
+    Mod+Shift+Right { spawn "dms" "ipc" "wallpaperCarousel" "cycleNext"; }
+    Mod+Shift+Left { spawn "dms" "ipc" "wallpaperCarousel" "cyclePrevious"; }
+    Mod+P hotkey-overlay-title="Color Pick" repeat=false { spawn-sh "dms color pick"; }
+    Mod+Shift+V hotkey-overlay-title="Open Clipboard" { spawn-sh "dms ipc clipboard toggle"; }
+    Mod+Ctrl+Alt+B hotkey-overlay-title="Toggle Status Bar" { spawn-sh "dms ipc call bar toggle name \"Main Bar\""; }
+
+    // ── 锁屏 / 电源 ───────────────────────────────────────────
+    Ctrl+Alt+L hotkey-overlay-title="Lock Screen" { spawn-sh "~/.config/niri/scripts/lock.sh"; }
+    Ctrl+Alt+Delete hotkey-overlay-title="Power Menu"  { spawn-sh "dms ipc call powermenu toggle"; }
+    Ctrl+Alt+P { power-off-monitors; }
+    Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
+
+    // ── 切换或启动应用 ────────────────────────────────────────
+    // Mod+2 { spawn-sh "~/.config/niri/scripts/switch.sh com.tmux.ghostty 'ghostty --class=com.tmux.ghostty -e  tmux new-session -A -s main' "; }
+    Mod+8 { spawn-sh "~/.config/niri/scripts/switch.sh zen zen-browser"; }
+    Mod+9 { spawn-sh "~/.config/niri/scripts/switch.sh logseq logseq"; }
+    // Mod+1 { spawn-sh "~/.config/niri/scripts/switch.sh Feishu feishu"; }
+    Mod+D { spawn-sh "~/.config/niri/scripts/switch.sh 'DBeaver Enterprise' dbeaver-ee"; }
+    Mod+N { spawn-sh "~/.config/niri/scripts/switch.sh Emacs 'emacsclient --alternate-editor= --create-frame'"; }
+}

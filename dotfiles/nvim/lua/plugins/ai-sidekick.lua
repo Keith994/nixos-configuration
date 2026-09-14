@@ -1,0 +1,93 @@
+return {}
+
+-- local function cli_action(method, args)
+--   return function()
+--     local cli = require("sidekick.cli")
+--     local fn = cli[method]
+--     if fn then
+--       fn(args)
+--     end
+--   end
+-- end
+--
+-- return {
+--   "folke/sidekick.nvim",
+--   opts = {
+--     nes = {
+--       enabled = true, -- If the user doesn't have the copilot LSP running internally this gets set as false
+--     },
+--     -- add any options here
+--     cli = {
+--       mux = {
+--         backend = "zellij",
+--         enabled = true,
+--       },
+--     },
+--   },
+--   keys = {
+--     {
+--       "<tab>",
+--       function()
+--         -- if there is a next edit, jump to it, otherwise apply it if any
+--         if not require("sidekick").nes_jump_or_apply() then
+--           return "<Tab>" -- fallback to normal tab
+--         end
+--       end,
+--       mode = { "i", "n" },
+--       expr = true,
+--       desc = "Goto/Apply Next Edit Suggestion",
+--     },
+--     {
+--       "<c-.>",
+--       cli_action("toggle"),
+--       desc = "Sidekick Toggle",
+--       mode = { "n", "t", "i", "x" },
+--     },
+--     {
+--       "<leader>aa",
+--       cli_action("toggle"),
+--       desc = "Sidekick Toggle CLI",
+--     },
+--     {
+--       "<leader>as",
+--       cli_action("select"),
+--       -- Or to select only installed tools:
+--       -- require("sidekick.cli").select({ filter = { installed = true } })
+--       desc = "Select CLI",
+--     },
+--     {
+--       "<leader>ad",
+--       cli_action("close"),
+--       desc = "Detach a CLI Session",
+--     },
+--     {
+--       "<leader>at",
+--       cli_action("send", { msg = "{this}" }),
+--       mode = { "x", "n" },
+--       desc = "Send This",
+--     },
+--     {
+--       "<leader>af",
+--       cli_action("send", { msg = "{file}" }),
+--       desc = "Send File",
+--     },
+--     {
+--       "<leader>av",
+--       cli_action("send", { msg = "{selection}" }),
+--       mode = { "x" },
+--       desc = "Send Visual Selection",
+--     },
+--     {
+--       "<leader>ap",
+--       cli_action("prompt"),
+--       mode = { "n", "x" },
+--       desc = "Sidekick Select Prompt",
+--     },
+--     -- Example of a keybinding to open Claude directly
+--     {
+--       "<leader>ac",
+--       cli_action("toggle", { name = "claude", focus = true }),
+--       desc = "Sidekick Toggle Claude",
+--     },
+--   },
+-- }

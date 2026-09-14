@@ -1,0 +1,18 @@
+[preview]
+max_width  = 1090
+max_height = 1080
+# [[plugin.prepend_fetchers]]
+# id   = "git"
+# name = "*"
+# run  = "git"
+
+# [[plugin.prepend_fetchers]]
+# id   = "git"
+# name = "*/"
+# run  = "git"
+
+# [open]
+# prepend_rules = [
+# 	{ name = "*.pdf", use = "/usr/bin/microsoft-edge-stable"},
+# 	{ name = "*.html", use = "/usr/bin/microsoft-edge-stable"}
+# ]
