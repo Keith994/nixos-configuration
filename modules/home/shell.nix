@@ -60,8 +60,8 @@
       gd = "git diff";
 
       # NixOS
-      nr = "sudo nixos-rebuild switch --flake ~/nix-config#nixos-vm";
-      nb = "sudo nixos-rebuild build --flake ~/nix-config#nixos-vm";
+      nr = "sudo nixos-rebuild switch --flake ~/nix-config#nixos-adol";
+      nb = "sudo nixos-rebuild build --flake ~/nix-config#nixos-adol";
       nc = "nix flake check ~/nix-config";
 
       # 编辑配置

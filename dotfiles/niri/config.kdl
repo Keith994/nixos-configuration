@@ -41,7 +41,6 @@ gestures {
     }
 }
 
-include "vm-alt.kdl"
 include "monitors.kdl"
 include "rules.kdl"
 include "animation.kdl"

@@ -21,7 +21,7 @@
       username = "keith";
     in
     {
-      nixosConfigurations.nixos-vm =
+      nixosConfigurations.nixos-adol =
         nixpkgs.lib.nixosSystem {
           inherit system;
 
@@ -30,7 +30,7 @@
           };
 
           modules = [
-            ./hosts/nixos-vm
+            ./hosts/nixos-adol
 
             home-manager.nixosModules.home-manager
 

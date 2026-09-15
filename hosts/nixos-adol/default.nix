@@ -6,8 +6,6 @@
       ./hardware-configuration.nix
       ../../modules/nixos/base.nix
       ../../modules/nixos/ssh.nix
-      ../../modules/nixos/vmware.nix
-      ../../modules/nixos/niri.nix
       ../../modules/nixos/shell.nix
       ../../modules/nixos/fonts.nix
 
@@ -23,7 +21,7 @@
   boot.loader.systemd-boot.configurationLimit = 10;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  networking.hostName = "nixos-vm";
+  networking.hostName = "adol";
 
   # 普通用户
   users.users.${username} = {
