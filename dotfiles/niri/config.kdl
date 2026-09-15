@@ -48,6 +48,6 @@ include "environment.kdl"
 include "keys.kdl"
 include "layouts.kdl"
 include "noctalia.kdl"
-include "./machine/monitors.kdl"
 
 include "startup.kdl"
+include "./machine-custom.kdl" // 最后机器特定可定制的，不用每次rebuild

@@ -1,6 +1,8 @@
 { pkgs, ... }:
 
 {
+  home.file.".local/bin/nix-update".source = ../../scripts/nix-update.sh;
+
   programs.zsh = {
     enable = true;
     defaultKeymap = "emacs";
@@ -65,6 +67,7 @@
       nr = "sudo nixos-rebuild switch --flake ~/nix-config#nixos-adol";
       nb = "sudo nixos-rebuild build --flake ~/nix-config#nixos-adol";
       nc = "nix flake check ~/nix-config";
+      nup = "nix-update";
 
       vpn = "export http_proxy=http://127.0.0.1:10800; export https_proxy=http://127.0.0.1:10800; export all_proxy=socks5://127.0.0.1:10800";
       unvpn = "unset http_proxy; unset https_proxy; unset all_proxy";

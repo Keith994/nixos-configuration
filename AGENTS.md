@@ -133,7 +133,18 @@ niri / yazi 用 `recursive = true`，部署结果是「每个文件一条指向 
 
 - 版本 **pin** 在 `@deepseek-ai/dsh@0.1.5-rc.1`（`npx --package=...`），升级 = 改这一行 + rebuild；
 - runner 用 `node --expose-internals` 启动由 `$(command -v dsh)` 解析出的真实入口；
-- 设置 `DSH_HOME = ${xdg.dataHome}/deepseek-harness`。
+- 设置 `DSH_HOME = ${xdg.dataHome}/deepseek-harness`；
+- `runtimeInputs` 里除 `nodejs_24` / `coreutils` 外还有 `pnpmOnly`、`gcc`、`python3`、`gnumake`：
+  前者给 `dsh plugin --profile <name> <pnpm 参数>`（转发给 pnpm）用，后三者给 node-gyp 现场编译
+  原生模块用（例如 `dsh-better-sidebar` 依赖的 `node-pty`）。它们只在 wrapper 的 PATH 上，不进全局环境；
+- `pnpmOnly` 是用 `symlinkJoin` 去掉 `pkgs.pnpm` 自带可执行文件（`node`/`npx`/`corepack`）、只留
+  `bin/pnpm`、`bin/pnpx` 的包装，避免它按 PATH 顺序遮蔽 `nodejs_24` —— **不要**图省事直接写 `pnpm`。
+
+**插件装在仓库外**：`dsh plugin` 装出来的插件落在 `$DSH_HOME/profiles/<profile>/`（`package.json` 的
+`dsh.profile.bundles` + `node_modules`），不属于这份 flake，`git status` 里看不到。声明了
+`dsh.bundle.patch` 的包会被自动追加成一层，没声明的只是普通依赖、要在 profile 的 `cordis.patch.yml`
+里自己 insert 一行。`patchReload: live` 只热加载用户层 patch 文件，**改了 bundles 必须重启对应 profile
+的进程**（如 `dsh web`）才生效。
 
 ## 8. 已知问题 / 陷阱
 

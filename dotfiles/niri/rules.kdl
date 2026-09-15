@@ -67,20 +67,6 @@ workspace "browser" {
     open-on-output "eDP-1"
 }
 
-
-window-rule {
-    match app-id="Bytedance-feishu"
-    match app-id="[fF]eishu"
-    // open-on-workspace "chat"
-    open-maximized true
-}
-
-window-rule {
-    match app-id="[fF]eishu"
-    match title="图片"
-    open-maximized true
-}
-
 window-rule {
     match app-id="com.tmux.ghostty"
     open-on-workspace "program_develop"
@@ -96,11 +82,6 @@ window-rule {
 window-rule {
     match app-id="^com\\.obsproject\\.Studio$"
     min-width 876
-}
-window-rule {
-    geometry-corner-radius 12
-    clip-to-geometry true
-    draw-border-with-background false
 }
 
 window-rule {

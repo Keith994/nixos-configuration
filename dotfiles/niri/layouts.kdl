@@ -1,13 +1,5 @@
 
 layer-rule {
-    match layer="top"
-    match layer="overlay"
-
-    // background-effect {
-    //     xray false
-    // }
-}
-layer-rule {
     match namespace="^quickshell$"
     place-within-backdrop true
 }

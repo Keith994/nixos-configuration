@@ -1,7 +1,5 @@
 environment {
-    ELECTRON_OZONE_PLATFORM_HINT "auto"
     QT_QPA_PLATFORMTHEME "gtk3"
-    QT_QPA_PLATFORMTHEME_QT6 "gtk3"
     XDG_MENU_PREFIX "nixos-"
     // fcitx5 由 modules/nixos/fcitx5.nix 以 waylandFrontend = true 启用：
     // Wayland 应用通过 text-input / input-method 协议直接和 fcitx5 通信，
@@ -14,7 +12,6 @@ environment {
     // _JAVA_AWT_WM_NONREPARENTING "1"
     EDITOR "nvim"
     LANG "zh_CN.UTF-8"
-    LC_ALL "en_US.UTF-8"
     // CLUTTER_BACKEND "wayland"
     // GDK_BACKEND "wayland,x11,*"
     // QT_QPA_PLATFORM "wayland"
@@ -29,6 +26,4 @@ environment {
     // AMD_VULKAN_ICD "RADV" // default editor
     //SACLE
     // GDK_DPI_SCALE "1.67"
-    QT_SCALE_FACTOR "1"
-    GDK_SCALE "1"
 }
