@@ -13,12 +13,12 @@ binds {
     Mod+Ctrl+Return hotkey-overlay-title="Open a Quick Terminal" { spawn-sh "ghostty +toggle-quick-terminal"; }
 
     // ── 音量 / 亮度（锁屏可用）────────────────────────────────
-    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "dms ipc call audio decrement 3"; }
-    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "dms ipc call audio increment 3"; }
-    XF86AudioMicMute allow-when-locked=true { spawn-sh "dms ipc call audio micmute"; }
-    XF86AudioMute allow-when-locked=true { spawn-sh "dms ipc call audio mute"; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn-sh "dms ipc call brightness decrement 5 '' "; }
-    XF86MonBrightnessUp allow-when-locked=true { spawn-sh "dms ipc call brightness increment 5 '' "; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "noctalia msg volume-down 3"; }
+    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "noctalia msg volume-up 3"; }
+    XF86AudioMicMute allow-when-locked=true { spawn-sh "noctalia msg mic-mute"; }
+    XF86AudioMute allow-when-locked=true { spawn-sh "noctalia msg volume-mute"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn-sh "noctalia msg brightness-down"; }
+    XF86MonBrightnessUp allow-when-locked=true { spawn-sh "noctalia msg brightness-up"; }
 
     // ── 窗口 / 布局 ───────────────────────────────────────────
     Mod+A hotkey-overlay-title="Over view" repeat=false { toggle-overview; }
@@ -94,22 +94,26 @@ binds {
     Mod+F12 hotkey-overlay-title="SnapShot Window" { spawn-sh "satty-screenshot.sh screenshot-window"; }
     Mod+Shift+F12 hotkey-overlay-title="SnapShot Screen" { spawn-sh "satty-screenshot.sh screenshot-screen"; }
 
-    // ── 启动器 / 面板 ─────────────────────────────────────────
-    Mod+Space hotkey-overlay-title="Spot light" { spawn-sh "dms ipc call spotlight toggle"; }
-    Mod+Shift+Space { spawn-sh "dms ipc call spotlight-bar toggle"; }
+    // ── 启动器 / 面板（noctalia v5 IPC，原来的 dms ipc call 一一对应）──
+    Mod+Space hotkey-overlay-title="Launcher" { spawn-sh "noctalia msg panel-toggle launcher"; }
+    Mod+Shift+Space hotkey-overlay-title="Control Center" { spawn-sh "noctalia msg panel-toggle control-center"; }
     Mod+E hotkey-overlay-title="File Manager" repeat=false { spawn-sh "footclient --app-id yazi_terminal -- yazi"; }
     Mod+Shift+E hotkey-overlay-title="Edit with emacs" repeat=false { spawn-sh "doom +everywhere"; }
-    Mod+I hotkey-overlay-title="System settings" { spawn-sh "dms ipc call settings toggle"; }
-    Mod+W hotkey-overlay-title="Select a Wallpaper" { spawn-sh "dms ipc wallpaperCarousel toggle";}
-    Mod+Shift+Right { spawn "dms" "ipc" "wallpaperCarousel" "cycleNext"; }
-    Mod+Shift+Left { spawn "dms" "ipc" "wallpaperCarousel" "cyclePrevious"; }
-    Mod+P hotkey-overlay-title="Color Pick" repeat=false { spawn-sh "dms color pick"; }
-    Mod+Shift+V hotkey-overlay-title="Open Clipboard" { spawn-sh "dms ipc clipboard toggle"; }
-    Mod+Ctrl+Alt+B hotkey-overlay-title="Toggle Status Bar" { spawn-sh "dms ipc call bar toggle name \"Main Bar\""; }
+    Mod+I hotkey-overlay-title="System settings" { spawn-sh "noctalia msg settings-toggle"; }
+    Mod+W hotkey-overlay-title="Select a Wallpaper" { spawn-sh "noctalia msg panel-toggle wallpaper"; }
+    Mod+Shift+Right { spawn "noctalia" "msg" "wallpaper-next"; }
+    Mod+Shift+Left { spawn "noctalia" "msg" "wallpaper-previous"; }
+    // Mod+P 取色：noctalia v5 没有对应 IPC（原来的 dms color pick）。
+    // 想保留这个功能就装个独立取色器（如 hyprpicker），然后在这里 spawn 它。
+    Mod+Shift+V hotkey-overlay-title="Open Clipboard" { spawn-sh "noctalia msg panel-toggle clipboard"; }
+    Mod+Ctrl+Alt+B hotkey-overlay-title="Toggle Status Bar" { spawn-sh "noctalia msg bar-toggle"; }
+    // dms 的 alttab.kdl 由运行时生成，弃用后这条改成 noctalia 自带的窗口切换器
+    // （按住 Alt 后 Tab/Shift+Tab 在 noctalia 的界面里切换，松开 Alt 或回车确认）
+    Alt+Tab hotkey-overlay-title="Window Switcher" { spawn-sh "noctalia msg window-switcher"; }
 
     // ── 锁屏 / 电源 ───────────────────────────────────────────
     Ctrl+Alt+L hotkey-overlay-title="Lock Screen" { spawn-sh "~/.config/niri/scripts/lock.sh"; }
-    Ctrl+Alt+Delete hotkey-overlay-title="Power Menu"  { spawn-sh "dms ipc call powermenu toggle"; }
+    Ctrl+Alt+Delete hotkey-overlay-title="Power Menu" { spawn-sh "noctalia msg panel-toggle session"; }
     Ctrl+Alt+P { power-off-monitors; }
     Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
 

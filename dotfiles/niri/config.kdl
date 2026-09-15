@@ -20,7 +20,8 @@ input {
  // focus-follows-mouse max-scroll-amount="95%"
 }
 debug {
-    // honor-xdg-activation-with-invalid-serial
+    // noctalia 的通知操作 / 窗口激活需要这个，否则点通知按钮没反应
+    honor-xdg-activation-with-invalid-serial
     // disable-monitor-names
     // render-drm-device "/dev/dri/card1"
     // ignore-drm-device "/dev/dri/renderD128"
@@ -41,20 +42,12 @@ gestures {
     }
 }
 
-include "monitors.kdl"
 include "rules.kdl"
 include "animation.kdl"
 include "environment.kdl"
 include "keys.kdl"
 include "layouts.kdl"
-include "dms/layout.kdl"
-include "dms/alttab.kdl"
-include "dms/colors.kdl"
-include "dms/wpblur.kdl"
-include "dms/cursor.kdl"
-include "dms/windowrules.kdl"
-include "dms/binds.kdl"
-include "dms/outputs.kdl"
-include "dms/windowrules.kdl"
+include "noctalia.kdl"
+include "./machine/monitors.kdl"
 
 include "startup.kdl"

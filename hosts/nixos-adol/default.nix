@@ -12,7 +12,7 @@
 
       ../../modules/nixos/compat.nix
       ../../modules/nixos/niri.nix
-      ../../modules/nixos/dms.nix
+      ../../modules/nixos/noctalia.nix
       ../../modules/nixos/greetd.nix
       ../../modules/nixos/fcitx5.nix
       ../../modules/nixos/clash-verge.nix

@@ -5,8 +5,12 @@
 // spawn-at-startup "gsettings" "set" "org.gnome.desktop.interface" "cursor-size" "24"
 spawn-sh-at-startup "fcitx5 -r -d"
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
-spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
-spawn-at-startup "wl-paste" "--type" "image" "--watch" "cliphist" "store"
+// noctalia v5：bar / 通知 / 剪贴板 / 锁屏 / OSD 全在它里面，polkit 认证仍由上面那条 polkit-gnome 负责
+// （所以 dotfiles/noctalia/config.toml 里 [shell] polkit_agent 保持默认关闭，避免两个 agent 抢 PolicyKit1）
+spawn-at-startup "noctalia"
+// noctalia 自带剪贴板历史（Mod+Shift+V），不需要 cliphist 再 watch 一份
+// spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
+// spawn-at-startup "wl-paste" "--type" "image" "--watch" "cliphist" "store"
 spawn-at-startup "clash-verge"
 spawn-sh-at-startup "foot --server"
 spawn-sh-at-startup "ydotoold"

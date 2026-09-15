@@ -12,8 +12,8 @@
 | 主机 | `nixos-adol`（`networking.hostName = "adol"`） |
 | 用户 | `keith`（属组 `wheel`、`networkmanager`） |
 | 系统 / stateVersion | `26.05` |
-| 输入 | `nixpkgs` → `nixos-26.05`；`home-manager` → `release-26.05`（follows nixpkgs） |
-| 时区 / 桌面 | `Asia/Shanghai` / niri + DankMaterialShell(dms) + greetd 登录器 |
+| 输入 | `nixpkgs` → `nixos-26.05`；`home-manager` → `release-26.05`（follows nixpkgs）；`noctalia` → `github:noctalia-dev/noctalia/cachix`（**不** follows，见第 8 节第 7 条） |
+| 时区 / 桌面 | `Asia/Shanghai` / niri + Noctalia(v5) + noctalia-greeter 登录器 |
 | 上游远端 | `git@github.com:Keith994/nixos-configuration.git`（本地目录名是 `~/nix-config`） |
 
 只有**一个** host、**一个**用户。`flake.nix` 里硬编码 `system = "x86_64-linux"`、`username = "keith"`，
@@ -32,7 +32,7 @@ modules/nixos/*.nix           # 系统级模块
 modules/home/*.nix            # 用户级模块（home-manager）
 modules/home/ai/*.nix         # AI 工具（dsh）
 dotfiles/                     # 真实配置文件，按程序分目录
-  nvim/  niri/  ghostty/  tmux/  yazi/  rime/
+  nvim/  niri/  ghostty/  tmux/  yazi/  rime/  noctalia/
 ```
 
 ## 3. 常用命令
@@ -69,8 +69,8 @@ nixfmt <file.nix>
 | `fonts.nix` | maple-mono.NF-CN、nerd-fonts.jetbrains-mono、lxgw-wenkai |
 | `compat.nix` | `programs.nix-ld`，用于跑非 Nix 的动态链接二进制 |
 | `niri.nix` | `programs.niri` + xwayland-satellite + ozone Wayland 环境变量 |
-| `dms.nix` | DankMaterialShell（`programs.dms-shell`）各功能开关 |
-| `greetd.nix` | `services.displayManager.dms-greeter`，compositor 用 niri |
+| `noctalia.nix` | noctalia shell 需要的系统服务：蓝牙、upower、power-profiles-daemon（wifi 在 base.nix） |
+| `greetd.nix` | noctalia-greeter：greetd + `greeter.toml`（tmpfiles）+ AccountsService/polkit（见第 8 节第 8 条） |
 | `fcitx5.nix` | fcitx5 + `waylandFrontend`，rime 引擎用 rime-ice |
 | `vmware.nix` | VMware guest 支持 —— **当前没有被任何 host import**，需要时自行加进 `hosts/nixos-adol/default.nix` |
 
@@ -87,6 +87,7 @@ nixfmt <file.nix>
 | `tmux.nix` | tmux，配置用 `builtins.readFile ../../dotfiles/tmux/tmux.conf` |
 | `yazi.nix` | yazi + 预览依赖；整个 `dotfiles/yazi` 递归链接 |
 | `niri.nix` | 整个 `dotfiles/niri` 递归链接 |
+| `noctalia.nix` | `inputs.noctalia` 的 `programs.noctalia` 模块 + `dotfiles/noctalia/config.toml`（构建期 validate，见第 8 节第 7 条） |
 | `rime.nix` | 见第 6 节「Rime 特例」 |
 | `devtools.nix` | go / rustc / cargo / nodejs / yarn / lazygit / trash-cli / tree-sitter 等 |
 | `chrome.nix` | `programs.chromium` + `pkgs.google-chrome`，强制 Wayland 与 fcitx5 IME |
@@ -100,6 +101,7 @@ nixfmt <file.nix>
 | --- | --- | --- |
 | `nvim`、`ghostty/config` | `mkOutOfStoreSymlink` 指向 `~/nix-config/dotfiles/...` | 否，保存即生效 |
 | `niri`、`yazi` | `xdg.configFile` 普通 source（store 逐文件软链） | 是 |
+| `noctalia/config.toml` | `programs.noctalia.settings` 指向仓库文件，构建期先 `noctalia config validate` 再软链 | 是 |
 | `tmux` | 构建期 `builtins.readFile` 读进配置 | 是 |
 | `starship.toml` | 仓库内文件链接 | 是 |
 | `rime` | 自定义 activation 拷贝（见第 6 节） | 是 |
@@ -108,7 +110,7 @@ nixfmt <file.nix>
 所以仓库必须留在 `~/nix-config`；换目录要同步改 `modules/home/nvim.nix` 与 `ghostty.nix`。
 
 niri / yazi 用 `recursive = true`，部署结果是「每个文件一条指向 store 的只读软链」，目录本身仍是可写的真实目录，
-因此 dms 之类运行时生成的 `~/.config/niri/dms/*.kdl`、yazi 的 `flavors/`、`plugins/` 才能共存。
+因此 yazi 的 `flavors/`、`plugins/` 才能共存。
 **不要**直接编辑 `~/.config/<app>` 下的软链目标，改动要落在 `dotfiles/` 里。
 
 ## 6. Rime 特例（不要"顺手优化"掉）
@@ -140,9 +142,25 @@ niri / yazi 用 `recursive = true`，部署结果是「每个文件一条指向 
    `dotfiles/nvim/lua/plugins/dbs_url/`（数据库明文）。`.gitignore` 已覆盖这些，新增同类文件时同步补规则。
 4. `dotfiles/nvim/` 有独立 `AGENTS.md`；nvim 目录是 out-of-store 软链，改 Lua **不需要** rebuild 但会被立刻读取。
 5. 只有单 host / 单 user：新增主机要改 `flake.nix` 的 outputs，并考虑把 `username`、`system` 参数化。
-6. niri 的 `config.kdl` 用 `include` 引了 `dms/*.kdl`，那些文件由 dms 运行时生成、**不在仓库里**，缺失不是错误。
-7. 桌面启动项（`dotfiles/niri/startup.kdl`）里有 `clash-verge`、`foot`、`ydotoold`、`polkit-gnome` 等，
+6. niri 的 `config.kdl` 用 `include` 引了 `noctalia.kdl`（仓库内文件，niri 侧的 noctalia 规则）。
+   已弃用的 dms 会在 `~/.config/niri/dms/` 留下运行时生成的文件，现在没人 include 它们了，可以手动 `rm -rf`。
+7. noctalia 走 `inputs.noctalia`（`github:noctalia-dev/noctalia/cachix`）拿到 5.1.x 包 + `programs.noctalia` 模块：
+   - **不要**给它加 `inputs.nixpkgs.follows`，也不要覆盖它的 nixpkgs —— 官方 Cachix 缓存按它自己的 nixpkgs 构建，
+     改了输入就等于放弃缓存（会本地编译 C++）。substituter 在 `modules/nixos/base.nix` 的 `nix.settings` 里配。
+   - lock 在 `cachix` 分支：永远指向 CI 已缓存的提交；`main` 可能还没缓存。
+   - `programs.noctalia.settings` 直接指向 `dotfiles/noctalia/config.toml`，`checkConfig = true` 会在**构建期**
+     跑 `noctalia config validate`，键名写错会 build 失败（这是好事）。
+   - 运行时配置仍有两层：`~/.config/noctalia/*.toml`（仓库软链，只读）优先级低，
+     `~/.local/state/noctalia/settings.toml`（GUI/IPC 写入）优先级高。改了 `dotfiles/noctalia/config.toml` 不生效时，
+     先看/删后者。
+   - 系统 nixpkgs 26.05 里也有 `pkgs.noctalia`（5.0.1）但没有模块；本仓库用上游 flake 的版本，不要混用。
+8. `modules/nixos/greetd.nix` 没有用上游的 `services.displayManager.noctalia-greeter` 模块 —— 锁定的 nixpkgs 26.05
+   里只有包（`pkgs.noctalia` / `pkgs.noctalia-greeter`）没有 NixOS 模块。两个硬约束：
+   greeter 只读 `/var/lib/noctalia-greeter/greeter.toml`（用 tmpfiles `L+` 软链），
+   且它靠 `XDG_DATA_DIRS` 找会话（greetd 服务环境里没有这个变量），所以 greetd 的 command 指向一层包装脚本。
+9. 桌面启动项（`dotfiles/niri/startup.kdl`）里有 `clash-verge`、`foot`、`ydotoold`、`polkit-gnome` 等，
    但它们并不都由这份 flake 安装 —— 排查"命令找不到"时先确认是 Nix 装的还是手工装的。
+   通知（`org.freedesktop.Notifications`）和剪贴板历史现在由 noctalia 接管，不要再装 mako/dunst/cliphist。
 
 ## 9. 改动流程（checklist）
 
