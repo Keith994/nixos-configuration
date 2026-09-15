@@ -8,12 +8,14 @@
       ../../modules/nixos/ssh.nix
       ../../modules/nixos/shell.nix
       ../../modules/nixos/fonts.nix
+      ../../modules/nixos/icons.nix
 
       ../../modules/nixos/compat.nix
       ../../modules/nixos/niri.nix
       ../../modules/nixos/dms.nix
       ../../modules/nixos/greetd.nix
       ../../modules/nixos/fcitx5.nix
+      ../../modules/nixos/clash-verge.nix
     ];
 
   # UEFI

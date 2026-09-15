@@ -12,7 +12,6 @@ output "HDMI-A-1" {
 // }
 // variable-refresh-rate
 output "eDP-1" {
-  off
     mode "2880x1800@120.000"
     scale 1.6
     transform "normal"

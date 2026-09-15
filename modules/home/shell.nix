@@ -5,6 +5,8 @@
     enable = true;
     defaultKeymap = "emacs";
 
+    setOptions = [ "AUTO_CD" ];
+
     enableCompletion = true;
 
     autosuggestion.enable = true;
