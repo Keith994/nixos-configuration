@@ -66,8 +66,8 @@
       nb = "sudo nixos-rebuild build --flake ~/nix-config#nixos-adol";
       nc = "nix flake check ~/nix-config";
 
-      vpn="export http_proxy=http://127.0.0.1:10800; export https_proxy=http://127.0.0.1:10800; export all_proxy=socks5://127.0.0.1:10800"
-      unvpn="unset http_proxy; unset https_proxy; unset all_proxy"
+      vpn = "export http_proxy=http://127.0.0.1:10800; export https_proxy=http://127.0.0.1:10800; export all_proxy=socks5://127.0.0.1:10800";
+      unvpn = "unset http_proxy; unset https_proxy; unset all_proxy";
 
       # 编辑配置
       nixcfg = "cd ~/nix-config";

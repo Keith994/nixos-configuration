@@ -9,6 +9,7 @@
     ../../modules/home/nvim.nix
 
     ../../modules/home/ghostty.nix
+    ../../modules/home/foot.nix
     ../../modules/home/tmux.nix
     ../../modules/home/devtools.nix
     ../../modules/home/yazi.nix
@@ -17,6 +18,9 @@
     ../../modules/home/rime.nix
     ../../modules/home/ai/deepseek-harness.nix
     ../../modules/home/chrome.nix
+    ../../modules/home/zen.nix
+    ../../modules/home/apps.nix
+    ../../modules/home/fontconfig.nix
   ];
 
   home.username = username;

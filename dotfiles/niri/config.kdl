@@ -35,7 +35,7 @@ debug {
     disable-cursor-plane true
 }
 hotkey-overlay { skip-at-startup; hide-not-bound; }
-screenshot-path "/tmp/niri-screenshots.png"
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 gestures {
     hot-corners {
        off

@@ -80,3 +80,4 @@ keybind = super+ctrl+right=resize_split:right,100
 # ghostty sends ";5;13~" characters, which is extremely annoying.
 # https://github.com/ghostty-org/ghostty/discussions/3151#discussioncomment-11678064
 keybind = ctrl+enter=text:\r
+theme = noctalia

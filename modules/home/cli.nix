@@ -35,5 +35,6 @@
     unzip
 
     htop
+    btop
   ];
 }

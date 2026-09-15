@@ -5,68 +5,210 @@
 # 按加载顺序最后生效、覆盖本文件。某个设置“不生效”时先去看/删那个文件。
 # 目录里所有 *.toml 都会被合并加载，所以只留一个 config.toml 最省心。
 
-[theme]
-mode = "dark"
-# source = "wallpaper" 相当于 dms 的 enableDynamicTheming：配色从壁纸生成，换壁纸就换主题。
-# 想固定用内置配色就改成 "builtin" + builtin = "Noctalia"。
-source = "wallpaper"
-wallpaper_scheme = "m3-content"
-builtin = "Noctalia"
+[bar.default]
+background_opacity = 0.60999998636543751
+capsule_radius = 15
+center = [ "group:g1" ]
+contact_shadow = true
+end = [ "group:g3", "group:g2" ]
+font_family = "LXGW WenKai"
+margin_ends = 0
+radius_top_left = 0
+radius_top_right = 0
+start = [ "launcher", "workspaces", "active_window" ]
 
-[wallpaper]
-enabled = true
-fill_mode = "crop"
-transition = [ "fade" ]
-transition_duration = 1500
+    [[bar.default.capsule_group]]
+    accordion = false
+    accordion_direction = "end"
+    enabled = true
+    fill = "surface_variant"
+    id = "g2"
+    members = [ "network_rx", "network", "bluetooth", "volume", "brightness", "battery", "settings", "session" ]
+    opacity = 1.0
+    padding = 6.0
+    radius = 15.0
 
-# 概览（Mod+A）里的模糊壁纸背景，需要 niri 侧那条 noctalia-backdrop 的 layer-rule 配套
-# （见 dotfiles/niri/noctalia.kdl），两者要么一起开、要么一起关。
-[backdrop]
-enabled = true
-blur_intensity = 0.5
-tint_intensity = 0.3
+    [[bar.default.capsule_group]]
+    accordion = false
+    accordion_direction = "end"
+    enabled = true
+    fill = "surface_variant"
+    id = "g3"
+    members = [ "caffeine", "tray", "cpu", "ram", "temp" ]
+    opacity = 1.0
+    padding = 6.0
+    radius = 15.0
+
+    [[bar.default.capsule_group]]
+    accordion = false
+    accordion_direction = "end"
+    enabled = true
+    fill = "surface_variant"
+    id = "g1"
+    members = [ "notifications", "date", "audio_visualizer", "media" ]
+    opacity = 1.0
+    padding = 6.0
+    radius = 15.0
+
+[control_center]
+hidden_tabs = [ "weather", "calendar" ]
+
+[idle]
+behavior_order = [ "lock", "screen-off", "lock-and-suspend" ]
+
+    [idle.behavior.lock]
+    action = "lock"
+    enabled = true
+    timeout = 600.0
+
+    [idle.behavior.lock-and-suspend]
+    action = "lock_and_suspend"
+    enabled = false
+    timeout = 900.0
+
+    [idle.behavior.screen-off]
+    action = "screen_off"
+    enabled = true
+    timeout = 660.0
+
+[lockscreen_widgets]
+enabled = false
+schema_version = 2
+widget_order = [ "lockscreen-login-box@eDP-1", "lockscreen-login-box@HDMI-A-1" ]
+
+    [lockscreen_widgets.grid]
+    cell_size = 16
+    major_interval = 4
+    visible = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@HDMI-A-1"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 1280.0
+    cy = 1258.0
+    output = "HDMI-A-1"
+    placement_height = 1440.0
+    placement_width = 2560.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@HDMI-A-1".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@eDP-1"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 900.0
+    cy = 943.0
+    output = "eDP-1"
+    placement_height = 1125.0
+    placement_width = 1800.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@eDP-1".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
+[notification]
+position = "top_center"
 
 [shell]
-# noctalia 的界面语言默认跟随 LC_ALL / LC_MESSAGES / LANG —— 本机 LC_ALL=en_US.UTF-8，不写就是英文界面。
-# zh-CN / zh-Hans 都是简体中文；想回到跟随环境变量就删掉这一行或写成空字符串。
-lang = "zh-CN"
+corner_radius_scale = 2.0
+font_family = "LXGW WenKai"
+lang = "zh-Hans"
+panel_anchor_bar = "default"
 
-[bar.default]
-position = "top"
-enabled = true
-thickness = 34
-radius = 12
-margin_ends = 100
-padding = 14
-widget_spacing = 6
+    [shell.launcher]
+    app_grid = true
 
-start = [ "launcher", "wallpaper", "workspaces" ]
-center = [ "clock" ]
-end = [
-  "media",
-  "tray",
-  "notifications",
-  "clipboard",
-  "network",
-  "bluetooth",
-  "volume",
-  "brightness",
-  "battery",
-  "control-center",
-  "session",
-]
+    [shell.panel]
+    clipboard_placement = "attached"
+    floating_layer = "top"
+    launcher_placement = "attached"
+    polkit_placement = "attached"
+    transparency_mode = "soft"
 
-[lockscreen]
-enabled = true
-# 挂起/合盖前自动锁屏，替代原来 swayidle 里 before-sleep 那一份
-lock_before_suspend = true
-# 锁屏时抓一张桌面快照当背景（原来是 dms 的锁屏模糊效果）
-blurred_desktop = true
-blur_intensity = 0.6
-tint_intensity = 0.35
+[theme]
+mode = "dark"
+pure_black_dark = true
+wallpaper_scheme = "soft"
 
-# noctalia 默认就接管 org.freedesktop.Notifications；本机没有别的通知守护，保持默认即可。
-# 剪贴板历史的加密主密钥走 Secret Service（niri 模块默认启用 gnome-keyring）。
-# polkit 认证仍由 startup.kdl 里的 polkit-gnome 负责，所以 [shell] polkit_agent 保持默认关闭。
-[notification]
-enable_daemon = true
+    [theme.templates]
+    builtin_ids = [ "btop", "cava", "foot", "gtk3", "gtk4", "ghostty", "niri", "qt", "starship" ]
+
+[wallpaper]
+directory = "/home/keith/Pictures/Wallpapers"
+
+    [wallpaper.default]
+    path = "/home/keith/Pictures/Wallpapers/dawn of war.png"
+
+    [wallpaper.last]
+    path = "/home/keith/Pictures/Wallpapers/dawn of war.png"
+
+    [wallpaper.monitors.HDMI-A-1]
+    path = "/home/keith/Pictures/Wallpapers/dawn of war.png"
+
+    [wallpaper.monitors.eDP-1]
+    path = "/home/keith/Pictures/Wallpapers/dawn of war.png"
+
+[widget.audio_visualizer]
+centered = false
+interactive = false
+mirrored = false
+
+[widget.clock]
+format = "{:%Y-%m-%d %H:%M}"
+
+[widget.cpu]
+visualization = "none"
+
+[widget.date]
+format = "{:%Y-%m-%d :%H:%M}"
+
+[widget.media]
+hide_when_no_media = true
+show_progress = true
+title_scroll = "always"
+
+[widget.network]
+show_label = false
+vpn_status = "hidden"
+
+[widget.network_rx]
+glyph = "arrow-down"
+visualization = "none"
+
+[widget.ram]
+visualization = "none"
+
+[widget.temp]
+visualization = "none"
+
+[widget.workspaces]
+labels_only_when_occupied = true

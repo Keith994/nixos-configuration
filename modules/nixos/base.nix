@@ -23,8 +23,10 @@
     git
     neovim
   ];
+  # obsidian 也是 unfree（闭源 Electron 应用），加包时别忘了同步这个白名单。
   nixpkgs.config.allowUnfreePredicate = pkg:
     builtins.elem (lib.getName pkg) [
       "google-chrome"
+      "obsidian"
     ];
 }

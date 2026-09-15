@@ -14,6 +14,22 @@
     # 覆盖 nixpkgs 会改变 derivation hash 从而全部缓存失效（见 docs.noctalia.dev 的 Binary Cache）。
     # 用 cachix 分支而不是 main：永远指向 CI 已经缓存好的最新提交。
     noctalia.url = "github:noctalia-dev/noctalia/cachix";
+
+    # Zen Browser：锁定的 nixpkgs 26.05 里根本没有 zen-browser（pkgs/by-name/ze 下查无此项），
+    # 只能走社区 flake。两个 follows 都要加：
+    # - nixpkgs follows：Zen 是预编译二进制，靠 autoPatchelfHook 链系统库，库版本和系统错配会
+    #   出现「没有 WebGL / 不认 GPU」这类问题（上游 README 的 troubleshooting 同样这么建议）；
+    # - home-manager follows：它的 homeModules.* 会 import `${home-manager}/modules/programs/
+    #   firefox/mkFirefoxModule.nix`，跟着我们这份 release-26.05 走，选项语义才不会和本地 HM 漂移。
+    # 代价是它的包吃不到上游缓存，但 Zen 只是 repack 上游 tarball，本地构建很便宜。
+    zen-browser = {
+      url = "github:0xc000022070/zen-browser-flake";
+
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        home-manager.follows = "home-manager";
+      };
+    };
   };
 
   outputs =
