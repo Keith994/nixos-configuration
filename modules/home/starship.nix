@@ -1,4 +1,10 @@
-{ config, ... }:
+{ config, lib, ... }:
+
+let
+  # 提示符配置的落点。手写的原始版 `starship.toml.orig` 进版本库，
+  # 运行中的 `starship.toml` 由 noctalia 注入、被 `.gitignore` 忽略。
+  starshipDir = "${config.home.homeDirectory}/nix-config/dotfiles/starship";
+in
 
 {
   programs.starship = {
@@ -16,13 +22,21 @@
   # 脚本明确是"写穿软链"（cat > "$config_file"），指向 store 就报
   # 「只读文件系统」，日志里 [hook_runner] hook failed 刷了十几条。
   # 和 rime / foot / nvim 是同一类坑（见 AGENTS.md 第 5、6 节）。
-  #
-  # 代价：starship 没有 include 机制，那段调色板只能内联进这个文件，所以每次换壁纸/主题
-  # 都会被改写一次。因此 `dotfiles/starship/starship.toml` **不进版本库**（`.gitignore` 忽略），
-  # 手写的原始版本跟踪在同目录的 `starship.toml.orig`；还原 / 新机器：
-  #   cp dotfiles/starship/starship.toml.orig dotfiles/starship/starship.toml
-  # （这个文件不存在时上面那条软链是悬空的，starship 会**静默**回退到内置默认配置 —— 见 AGENTS.md 第 8 节。）
   xdg.configFile."starship.toml".source =
-    config.lib.file.mkOutOfStoreSymlink
-      "${config.home.homeDirectory}/nix-config/dotfiles/starship/starship.toml";
+    config.lib.file.mkOutOfStoreSymlink "${starshipDir}/starship.toml";
+
+  # 运行中那份（starship.toml）每次换壁纸都被 noctalia 重写，所以它不进版本库；
+  # 手写内容维护在同目录的 starship.toml.orig。代价是它一旦缺失
+  # （新机器、git clean -xdf、手滑删掉），~/.config/starship.toml 就是一条**悬空软链**，
+  # starship 会静默回退到内置默认配置、**不报任何错** —— 所以这里补一道"缺失时播种"。
+  #
+  # 只在 `! -e` 时动手：绝不覆盖 noctalia 已经注入好的内容（那才是运行中的配置）。
+  # 想手动把提示符重置回原始版，还是直接 cp 覆盖：
+  #   cp dotfiles/starship/starship.toml.orig dotfiles/starship/starship.toml
+  home.activation.starshipSeedConfig = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    dst="${starshipDir}/starship.toml"
+    if [ ! -e "$dst" ]; then
+      run install -m 0644 "${starshipDir}/starship.toml.orig" "$dst"
+    fi
+  '';
 }

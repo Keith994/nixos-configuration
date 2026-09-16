@@ -7,10 +7,15 @@
 # `# >>> NOCTALIA STARSHIP PALETTE >>>` … `# <<< NOCTALIA STARSHIP PALETTE <<<`。
 # 所以那个文件被 .gitignore 忽略，只在这份 .orig 里维护手写内容。
 #
-# 还原 / 新机器（`~/.config/starship.toml` 缺目标时软链是悬空的，starship 会**静默**回退到
-# 内置默认配置，看着就像"配置没生效" —— 见 AGENTS.md 第 5、8 节）：
+# 还原 / 新机器：**不用手动** —— `nixos-rebuild switch` 时
+# `home.activation.starshipSeedConfig`（见 modules/home/starship.nix）会在运行中那份**缺失**时
+# 从这里拷一份过去（只在缺失时动手，绝不覆盖 noctalia 已注入的内容）。
+# 想把提示符重置回这份原始版（即覆盖掉 noctalia 的注入）就手动覆盖：
 #
 #     cp dotfiles/starship/starship.toml.orig dotfiles/starship/starship.toml
+#
+# 背景：目标缺失时 `~/.config/starship.toml` 是**悬空软链**，starship 会静默回退到内置默认配置、
+# 不报任何错，看着就像"配置没生效" —— 见 AGENTS.md 第 5、8 节。
 #
 # 下面那份 [palettes.catppuccin_mocha] 是 noctalia 注入之前的调色板；注入后 `palette` 会指向
 # "noctalia"，这份就成了备用（把 noctalia 从模板列表里去掉再还原时就用它）。
