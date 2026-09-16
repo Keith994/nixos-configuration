@@ -1,4 +1,9 @@
 [[mgr.prepend_keymap]]
+on   = "i"
+run  = "shell 'imv %s'"
+desc = "用 imv 打开图片"
+
+[[mgr.prepend_keymap]]
 on   = "<A-d>"
 run  = "plugin diff"
 desc = "Diff the selected with the hovered file"

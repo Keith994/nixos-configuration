@@ -52,8 +52,6 @@ window-rule {
     match app-id="firefox$" title="画中画"
     match app-id="xarchiver"
     match app-id="firefox$" title="^Picture-in-Picture$"
-    match app-id="imv"
-    match app-id="com.gabm.satty"
     open-floating true
 }
 
@@ -142,10 +140,10 @@ window-rule {
     match app-id="imv"
     match app-id="com\\.gabm\\.satty"
     open-floating true
-    default-window-width {
+    default-window-height {
         proportion 0.8
     }
-    default-window-height {
+    default-column-width {
         proportion 0.8
     }
 }
