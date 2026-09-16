@@ -33,3 +33,8 @@
 # 模板渲染 flavors/noctalia.yazi/，它的 apply.sh 还会整份覆盖 theme.toml。
 /dotfiles/yazi/theme.toml
 /dotfiles/yazi/flavors/noctalia.yazi/
+# starship 的运行中配置：每次换壁纸/主题都会被 noctalia 注入 `palette = "noctalia"` + 末尾那段
+# 调色板块，所以不入库。手写的原始版本跟踪在同目录的 starship.toml.orig，
+# 还原/新机器就 `cp dotfiles/starship/starship.toml.orig dotfiles/starship/starship.toml`
+# （见 AGENTS.md 第 5 节；`.orig` 不在忽略范围内）。
+/dotfiles/starship/starship.toml

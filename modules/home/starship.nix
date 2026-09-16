@@ -17,10 +17,11 @@
   # 「只读文件系统」，日志里 [hook_runner] hook failed 刷了十几条。
   # 和 rime / foot / nvim 是同一类坑（见 AGENTS.md 第 5、6 节）。
   #
-  # 代价：starship 没有 include 机制，那段调色板只能内联进这个文件，所以每次换主题
-  # 都会改写它的内容（`dotfiles/starship/starship.toml` 会变脏）。它既是手写配置、
-  # 又是 noctalia 的渲染目标，所以照旧进版本库，看 diff 决定要不要提交 ——
-  # 这点和那些"纯生成物"（被 .gitignore 忽略的 noctalia.kdl / themes/noctalia）不同。
+  # 代价：starship 没有 include 机制，那段调色板只能内联进这个文件，所以每次换壁纸/主题
+  # 都会被改写一次。因此 `dotfiles/starship/starship.toml` **不进版本库**（`.gitignore` 忽略），
+  # 手写的原始版本跟踪在同目录的 `starship.toml.orig`；还原 / 新机器：
+  #   cp dotfiles/starship/starship.toml.orig dotfiles/starship/starship.toml
+  # （这个文件不存在时上面那条软链是悬空的，starship 会**静默**回退到内置默认配置 —— 见 AGENTS.md 第 8 节。）
   xdg.configFile."starship.toml".source =
     config.lib.file.mkOutOfStoreSymlink
       "${config.home.homeDirectory}/nix-config/dotfiles/starship/starship.toml";
