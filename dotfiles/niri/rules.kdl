@@ -55,27 +55,33 @@ window-rule {
     open-floating true
 }
 
-workspace "chat" {
+// workspace 直接叫数字。"1" "2" "3" 是名字，不是索引 —— niri 的索引只是「当前位置」，
+// 只有 focus-workspace 1 / move-column-to-workspace 1 这类动作才按索引，且会随排列变化。
+// 声明顺序 = 它们在显示器上的排列顺序；名字声明在这里，workspace 就一直存在（空着也不消失）。
+workspace "1" {
     open-on-output "eDP-1"
 }
 
-workspace "program_develop" {
+workspace "2" {
     open-on-output "eDP-1"
 }
 
-workspace "browser" {
+workspace "3" {
     open-on-output "eDP-1"
 }
 
 window-rule {
     match app-id="com.tmux.ghostty"
-    open-on-workspace "program_develop"
+    open-on-workspace "2"
     open-maximized false
 }
 
 window-rule {
+    // google-chrome 打开在 workspace 3。open-on-workspace 匹配的是上面的名字 "3"
+    // （不是索引 3），必须写成字符串；写成裸数字 3 会直接解析报错。
     match app-id="firefox"
-    open-on-workspace "browser"
+    match app-id="google-chrome"
+    open-on-workspace "3"
     open-maximized true
 }
 

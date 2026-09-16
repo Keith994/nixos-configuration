@@ -211,4 +211,7 @@ visualization = "none"
 visualization = "none"
 
 [widget.workspaces]
+# bar 上的编号取自 niri 的 workspace idx（label_source 默认 "id"），跟 workspace 叫什么名字无关，
+# 所以名字用 "1"/"2"/"3" 还是 "browser" 都不影响显示。要直接显示名字就写
+# label_source = "name"，并把 max_label_chars 调大（默认 1，会把 program_develop 截成 p）。
 labels_only_when_occupied = true

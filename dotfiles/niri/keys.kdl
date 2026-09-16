@@ -120,7 +120,7 @@ binds {
 
     // ── 切换或启动应用 ────────────────────────────────────────
     // Mod+2 { spawn-sh "~/.config/niri/scripts/switch.sh com.tmux.ghostty 'ghostty --class=com.tmux.ghostty -e  tmux new-session -A -s main' "; }
-    Mod+8 { spawn-sh "~/.config/niri/scripts/switch.sh zen zen-browser"; }
+    Mod+8 { spawn-sh "~/.config/niri/scripts/switch.sh google-chrome google-chrome"; }
     Mod+9 { spawn-sh "~/.config/niri/scripts/switch.sh logseq logseq"; }
     Mod+D { spawn-sh "~/.config/niri/scripts/switch.sh 'DBeaver Enterprise' dbeaver-ee"; }
     Mod+N { spawn-sh "~/.config/niri/scripts/switch.sh Emacs 'emacsclient --alternate-editor= --create-frame'"; }
