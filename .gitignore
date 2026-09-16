@@ -16,3 +16,20 @@
 *.swp
 *.swo
 *-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]*
+
+# ── noctalia 主题模板的渲染产物（换一次主题就被全部重写，不入库）──────
+# 只按具体路径忽略。**不要**写 `**/noctalia` / `**/noctalia.*`：
+# 那种宽规则会连带命中手写的 dotfiles/noctalia/ 目录（noctalia 会合并加载
+# 那里的所有 *.toml，被忽略就等于"改了配置不生效 / 提交时漏文件"）。
+#
+# 代价：下面这些文件正是各配置 include 的目标，全新 clone（或 git clean -xdf）
+# 之后必须先跑一次 noctalia 主题，否则 niri / foot 报 include 缺失、
+# umbriel 直接起不来、yazi 掉回默认主题。见 AGENTS.md 第 5 节。
+/dotfiles/niri/noctalia.kdl
+/dotfiles/foot/themes/noctalia
+/dotfiles/ghostty/themes/noctalia
+/dotfiles/umbriel/noctalia.toml
+# yazi 是 noctalia 的**社区**模板（state 层 community_ids 里的 "yazi"）：
+# 模板渲染 flavors/noctalia.yazi/，它的 apply.sh 还会整份覆盖 theme.toml。
+/dotfiles/yazi/theme.toml
+/dotfiles/yazi/flavors/noctalia.yazi/
