@@ -3,6 +3,12 @@
 {
   networking.networkmanager.enable = true;
 
+  # LocalSend 是局域网直连：TCP 53317 传文件、UDP 53317 做组播发现。
+  # 防火墙默认全拦，不放行这两个端口时对方找不到本机、只能发不能收。
+  # 组播发现还有问题的话再加 networking.firewall.checkReversePath = "loose";
+  networking.firewall.allowedTCPPorts = [ 53317 ];
+  networking.firewall.allowedUDPPorts = [ 53317 ];
+
   time.timeZone = "Asia/Shanghai";
 
   nix.settings = {

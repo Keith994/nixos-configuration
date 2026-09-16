@@ -91,6 +91,9 @@ binds {
     // ── 截图 / 录屏 ───────────────────────────────────────────
     Mod+Shift+S hotkey-overlay-title="SnapShot Area" { spawn-sh "noctalia msg screenshot-region"; }
     Mod+Ctrl+S hotkey-overlay-title="Annotate Screen" { spawn-sh "noctalia msg screenshot-annotate"; }
+    // satty 标注「最新一张截图」（截图都落在 ~/Pictures/Screenshots）。
+    // 截图本身仍走上面的内置动作 / noctalia IPC，satty 只负责改已有的图。
+    Mod+Shift+A hotkey-overlay-title="Annotate Latest Screenshot (satty)" { spawn-sh "~/.config/niri/scripts/satty-last.sh"; }
     Mod+F12 hotkey-overlay-title="SnapShot Window" { screenshot-window; }
     Mod+Shift+F12 hotkey-overlay-title="SnapShot Screen" { screenshot-screen; }
     Mod+Shift+Ctrl+S hotkey-overlay-title="SnapShot UI" { screenshot; }
@@ -122,6 +125,7 @@ binds {
     // Mod+2 { spawn-sh "~/.config/niri/scripts/switch.sh com.tmux.ghostty 'ghostty --class=com.tmux.ghostty -e  tmux new-session -A -s main' "; }
     Mod+8 { spawn-sh "~/.config/niri/scripts/switch.sh google-chrome google-chrome"; }
     Mod+9 { spawn-sh "~/.config/niri/scripts/switch.sh logseq logseq"; }
+    Mod+T { spawn-sh "~/.config/niri/scripts/switch.sh org.telegram.desktop Telegram"; }
     Mod+D { spawn-sh "~/.config/niri/scripts/switch.sh 'DBeaver Enterprise' dbeaver-ee"; }
     Mod+N { spawn-sh "~/.config/niri/scripts/switch.sh Emacs 'emacsclient --alternate-editor= --create-frame'"; }
 }

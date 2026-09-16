@@ -32,7 +32,7 @@ modules/nixos/*.nix           # 系统级模块
 modules/home/*.nix            # 用户级模块（home-manager）
 modules/home/ai/*.nix         # AI 工具（dsh）
 dotfiles/                     # 真实配置文件，按程序分目录
-  nvim/  niri/  ghostty/  tmux/  yazi/  rime/  noctalia/  fontconfig/
+  nvim/  niri/  ghostty/  tmux/  yazi/  rime/  noctalia/  fontconfig/  mpv/
 ```
 
 ## 3. 常用命令
@@ -63,7 +63,7 @@ nixfmt <file.nix>
 
 | 文件 | 作用 |
 | --- | --- |
-| `base.nix` | networkmanager、时区、flakes 实验特性、zram、git/neovim、`allowUnfreePredicate`(google-chrome / obsidian) |
+| `base.nix` | networkmanager、时区、flakes 实验特性、zram、git/neovim、`allowUnfreePredicate`(google-chrome / obsidian)；Cachix substituter（noctalia） |
 | `ssh.nix` | openssh：密码登录开，root 登录关 |
 | `shell.nix` | 系统层启用 zsh，并把普通用户 shell 设为 zsh（不影响 root） |
 | `fonts.nix` | 字体包都在这：maple-mono.NF-CN（拉丁/终端）、lxgw-wenkai（中文）、nerd-fonts.jetbrains-mono、nerd-fonts.symbols-only。fonts.conf 里点名的 family 必须能在这些包里找到（见第 8 节第 11 条） |
@@ -83,9 +83,12 @@ nixfmt <file.nix>
 | `git.nix` | `programs.git`：main 分支、fetch.prune、editor=nvim、ignore 规则；身份信息从 `~/.config/git/local.conf` include |
 | `starship.nix` | starship 提示符 + `modules/home/starship.toml`；`configPath` 必须与文件落点一致（见第 8 节第 2 条） |
 | `nvim.nix` | EDITOR/VISUAL=nvim、`vi`/`vim` 别名、编译依赖；`~/.config/nvim` 软链到仓库 |
-| `ghostty.nix` | ghostty + zsh 集成；只把 `config` 软链到仓库 |
+| `ghostty.nix` | ghostty（nixpkgs 稳定版）+ zsh 集成；只把 `config` 软链到仓库（nightly 试过，见第 8 节第 6 条） |
 | `foot.nix` | 装 `foot` / `footclient`，整个 `dotfiles/foot` 目录 out-of-store 软链到 `~/.config/foot`；server 由 niri 启动项拉起（见第 8 节第 13 条） |
 | `tmux.nix` | tmux，配置用 `builtins.readFile ../../dotfiles/tmux/tmux.conf` |
+| `mpv.nix` | `pkgs.mpv.override`（挂 `mpvScripts.mpris`，让 noctalia 的媒体组件/媒体键能看到它）+ `dotfiles/mpv/{mpv.conf,input.conf}` 两个**单文件** out-of-store 软链（不整目录链：mpv 往 `~/.config/mpv/watch_later/` 写进度）；键位是 vim 风格 |
+| `imv.nix` | `programs.imv`：Wayland 原生键盘图片查看器，深色底 + 浮层 + vim 的 `n`/`N` 翻图。**没**配默认打开方式：`~/.config/mimeapps.list` 是仓库外的手工文件（`image/png` 现在指向 Chrome），要改直接 `xdg-mime default imv.desktop image/png` |
+| `satty.nix` | `programs.satty`（截图标注，只打开已有图片）+ `wl-clipboard`（satty 的 `copy-command` 要 `wl-copy`，顺便给终端用）；`Mod+Shift+A` 走 `dotfiles/niri/scripts/satty-last.sh` 标注最新一张截图（见第 8 节第 5 条） |
 | `yazi.nix` | yazi + 预览依赖；整个 `dotfiles/yazi` 递归链接 |
 | `niri.nix` | 整个 `dotfiles/niri` 递归链接 |
 | `noctalia.nix` | `inputs.noctalia` 的 `programs.noctalia` 模块 + `dotfiles/noctalia/config.toml`（构建期 validate，见第 8 节第 7 条） |
@@ -93,7 +96,7 @@ nixfmt <file.nix>
 | `devtools.nix` | go / rustc / cargo / nodejs / yarn / lazygit / trash-cli / tree-sitter 等 |
 | `chrome.nix` | `programs.chromium` + `pkgs.google-chrome`，强制 Wayland 与 fcitx5 IME |
 | `zen.nix` | `inputs.zen-browser` 的 `programs.zen-browser` 模块（beta 通道，命令行 `zen-beta`）；nixpkgs 里没有这个包（见第 8 节第 12 条） |
-| `apps.nix` | 没有 `programs.*` 模块、也不需要额外包装参数的 GUI 应用（当前：obsidian）。unfree 的要同步 `base.nix` 的白名单 |
+| `apps.nix` | 没有 `programs.*` 模块、也不需要额外包装参数的 GUI 应用（obsidian、localsend、telegram-desktop）。unfree 的要同步 `base.nix` 的白名单 |
 | `fontconfig.nix` | 把 `dotfiles/fontconfig/fonts.conf` 软链到 `~/.config/fontconfig/fonts.conf`（见第 8 节第 11 条） |
 | `ai/deepseek-harness.nix` | 打包 `dsh` 命令（见第 7 节） |
 
@@ -104,6 +107,7 @@ nixfmt <file.nix>
 | 目标 | 方式 | 改完需要 rebuild？ |
 | --- | --- | --- |
 | `nvim`、`ghostty/config`、`foot`（整目录） | `mkOutOfStoreSymlink` 指向 `~/nix-config/dotfiles/...` | 否，保存即生效（foot 要重启 server 才读新配置，见第 8 节第 13 条） |
+| `mpv/mpv.conf`、`mpv/input.conf`（单文件） | `mkOutOfStoreSymlink` 指向 `~/nix-config/dotfiles/mpv/*`：**不**整目录链，mpv 要往 `~/.config/mpv/watch_later/` 写播放进度 | 否，保存即生效 |
 | `niri`、`yazi` | `xdg.configFile` 普通 source（store 逐文件软链） | 是 |
 | `fontconfig/fonts.conf` | `xdg.configFile` 普通 source，落点 `~/.config/fontconfig/fonts.conf` | 是 |
 | `noctalia/config.toml` | `programs.noctalia.settings` 指向仓库文件，构建期先 `noctalia config validate` 再软链 | 是 |
@@ -112,7 +116,7 @@ nixfmt <file.nix>
 | `rime` | 自定义 activation 拷贝（见第 6 节） | 是 |
 
 `mkOutOfStoreSymlink` 把**绝对路径**写死成 `${config.home.homeDirectory}/nix-config/dotfiles/...`，
-所以仓库必须留在 `~/nix-config`；换目录要同步改 `modules/home/nvim.nix` 与 `ghostty.nix`。
+所以仓库必须留在 `~/nix-config`；换目录要同步改 `modules/home/nvim.nix`、`ghostty.nix` 与 `mpv.nix`。
 
 niri / yazi 用 `recursive = true`，部署结果是「每个文件一条指向 store 的只读软链」，目录本身仍是可写的真实目录，
 因此 yazi 的 `flavors/`、`plugins/` 才能共存。
@@ -157,12 +161,26 @@ niri / yazi 用 `recursive = true`，部署结果是「每个文件一条指向 
    （`clash-verge` 由 `modules/nixos/clash-verge.nix` 装；`foot --server` 里的 foot 由
    `modules/home/foot.nix` 装，见第 13 条）。
    通知（`org.freedesktop.Notifications`）和剪贴板历史现在由 noctalia 接管，不要再装 mako/dunst/cliphist。
-5. 截图**不依赖** grim / slurp / satty（这三个包这份 flake 从没装过，`dotfiles/niri/keys.kdl` 里曾经
-    `spawn-sh` 一个仓库里根本不存在的 `satty-screenshot.sh`，按下去只是静默失败）。现在走
+5. 截图**不依赖** grim / slurp（这两个包这份 flake 没装，`dotfiles/niri/keys.kdl` 里曾经
+    `spawn-sh` 一个仓库里根本不存在的 `satty-screenshot.sh`，按下去只是静默失败）。截图入口是
     niri 26.04 内置动作（`screenshot` / `screenshot-screen` / `screenshot-window`，落盘路径由
     `config.kdl` 的 `screenshot-path` 决定，现在是 `~/Pictures/Screenshots/` 下带 `%Y-%m-%d %H-%M-%S`
     时间戳的文件）+ noctalia v5 的 `screenshot-region` / `screenshot-annotate` IPC。
     要改截图按键先看 `noctalia msg --help` 里有没有现成子命令，别再引入外部截图工具链。
+   satty 现在**装了**（`modules/home/satty.nix`，连带 `wl-clipboard`），但它只做「打开已有图片来画」：
+   `Mod+Shift+A` → `dotfiles/niri/scripts/satty-last.sh` 打开截图目录里最新的一张。
+   也就是说 satty 不参与截图、只是标注器，`noctalia msg annotate <path>` 是它的同类替代。
+6. ghostty 保持 nixpkgs 的稳定版（`programs.ghostty` 默认的 `pkgs.ghostty`）。
+   **nightly 试过并回退了**：2026-09 曾接官方 flake（`github:ghostty-org/ghostty/tip`，
+   `programs.ghostty.package = inputs.ghostty.packages.${...}.default`）并配上上游 CI 的
+   `ghostty.cachix.org`（那个 cache 确实可用，命中的 nar.zst 约 25 MiB），但实测启动后**黑屏**，
+   所以整体回滚：`flake.nix` 的 `ghostty` 输入、`flake.lock` 的对应节点、`base.nix` 里的
+   ghostty substituter / public key 都已删除。要再试的话记得这几点：
+   - 上游 flake **不要**加 `inputs.nixpkgs.follows`（它自带 pin 的 zig overlay 和 nixpkgs）；
+   - 它的包不在 cache.nixos.org 上，得加 `https://ghostty.cachix.org` 才不用本地 zig build；
+   - nixpkgs 的 `pkgs.ghostty-bin` 只支持 darwin（macOS `.dmg` 重打包），Linux 上没用；
+   - `dotfiles/ghostty/config` 是 out-of-store 软链，改配置本来就不用 rebuild。
+7. 忽略niri的machine-custom.kdl错误
 
 ## 9. 改动流程（checklist）
 

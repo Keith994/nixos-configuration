@@ -11,6 +11,9 @@
     ../../modules/home/ghostty.nix
     ../../modules/home/foot.nix
     ../../modules/home/tmux.nix
+    ../../modules/home/mpv.nix
+    ../../modules/home/imv.nix
+    ../../modules/home/satty.nix
     ../../modules/home/devtools.nix
     ../../modules/home/yazi.nix
     ../../modules/home/niri.nix

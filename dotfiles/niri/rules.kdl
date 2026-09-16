@@ -52,6 +52,8 @@ window-rule {
     match app-id="firefox$" title="画中画"
     match app-id="xarchiver"
     match app-id="firefox$" title="^Picture-in-Picture$"
+    match app-id="imv"
+    match app-id="com.gabm.satty"
     open-floating true
 }
 
@@ -130,5 +132,20 @@ window-rule {
     }
     default-column-width {
         proportion 0.93
+    }
+}
+
+// imv / satty：看图、标注这类「看一眼就关」的窗口不占列，开着浮动。
+// app-id 是在跑着的会话里实测的（niri msg --json windows）：imv 上报 "imv"，
+// satty 0.20.1 用的是 GTK application id "com.gabm.satty"。
+window-rule {
+    match app-id="imv"
+    match app-id="com\\.gabm\\.satty"
+    open-floating true
+    default-window-width {
+        proportion 0.8
+    }
+    default-window-height {
+        proportion 0.8
     }
 }
