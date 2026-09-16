@@ -1,6 +1,6 @@
 prefer-no-csd
 clipboard { disable-primary; }
-cursor { xcursor-size 24; hide-when-typing; }
+cursor { xcursor-size 20; hide-when-typing; }
 input {
     keyboard {
         repeat-delay 200

@@ -171,6 +171,37 @@ out-of-store 软链，见第 5 节），不用 rebuild、也不用重开会话�
 - `flake.lock` 只新增了 `umbriel`、`umbriel/nixpkgs`、`umbriel/xdg-desktop-portal-umbriel`
   三个节点，已有输入（nixpkgs/home-manager/noctalia/zen-browser）**没动**。
 
+### 3.5 光标主题（Bibata，四处要保持一致）
+
+会话里原本**没有配置任何 cursor 主题**：`XCURSOR_THEME`/`XCURSOR_SIZE` 都没设，
+`XCURSOR_PATH` 里真正带 `cursors/` 的只有 Adwaita，也没有名为 `default` 的主题
+（`XCURSOR_THEME` 为空时 xcursor 找的就是 `default`）。后果是同一个会话里几种光标混用：
+
+- umbriel 自己画的窗口边缘拖拽 / 移动光标解析不到
+  （`~/.cache/umbriel/umbriel.log` 里 `XCursor theme is missing 'ew-resize'/'col-resize'/'grab'
+  cursor, falling back to 'default'`），拖边框时换成默认箭头；
+- Qt（noctalia 栏，走 `cursor_shape_v1` 直接问合成器要形状）/ XWayland / Electron
+  这些不读 GTK 设置的程序各自回退到内置箭头。
+
+现在统一成 `Bibata-Modern-Ice`、尺寸 20（比原来的 24 小一点），**四处字面量必须一致**：
+
+| 文件 | 位置 | 管谁 |
+| --- | --- | --- |
+| `modules/nixos/icons.nix` | `bibata-cursors` | 装主题本体。system 级装，**greeter 用户**才解析得到 `share/icons/Bibata-Modern-Ice` |
+| `dotfiles/umbriel/config.toml` | `[input.cursor] theme` / `size` | 合成器自己画的光标 + 问合成器要形状的 Qt 客户端（`cursor_shape_v1`） |
+| `dotfiles/umbriel/config.toml` | `[environment] XCURSOR_THEME` / `XCURSOR_SIZE` | umbriel 会话里所有子进程（Qt / XWayland / Electron / GTK） |
+| `dotfiles/niri/environment.kdl` + `config.kdl` | `XCURSOR_THEME` / `XCURSOR_SIZE` / `cursor { xcursor-size 20 }` | niri 会话同样一套（这个坑 niri 也有） |
+| `modules/nixos/greetd.nix` | `cursor.theme` / `cursor.size` | 登录页 greeter |
+
+- **`[environment]` / niri 的 `environment {}` 只在会话启动时生效**，改完要重开会话
+  （umbriel 配置本身是软链，不用 rebuild；但这次动了 `icons.nix`/`greetd.nix`，要 rebuild）。
+- 变体：`Bibata-Modern-Ice` 箭头指左上（和经典 X11 光标同向，niri `startup.kdl` 注释里原本想要的）；
+  `Bibata-Modern-Ice-Right` 是镜像版（指右上）；另有 `Bibata-Original-*`、`phinger-cursors`、
+  `apple-cursor` 可选，换的时候把上表里的名字一起改。
+- umbriel **没有左手鼠标/按键互换**的选项（`left_handed` 只有 `[input.tablet]` 有），
+  鼠标相关的键位见 `config.toml` 的 `[input.mouse]` 段（`natural_scroll` / `accel_profile` /
+  `sensitivity` / `scroll_wheel_step` / `scroll_button` / `scroll_button_lock`）。
+
 ## 4. 脚本移植说明
 
 | 脚本 | 改了什么 |

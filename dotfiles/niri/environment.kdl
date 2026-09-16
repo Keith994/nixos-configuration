@@ -12,6 +12,13 @@ environment {
     // _JAVA_AWT_WM_NONREPARENTING "1"
     EDITOR "nvim"
     LANG "zh_CN.UTF-8"
+    // 光标主题：同目录 config.kdl 顶上那行 cursor { xcursor-size ... } 也一起调到 20。
+    // 以前整个会话没设过 XCURSOR_THEME，xcursor 会去找名为 "default" 的主题（本机没有），
+    // 结果 niri 自己画的窗口边缘/移动光标、以及 XWayland/Electron 这些不读 GTK 设置的程序
+    // 各自回退到内置箭头。主题包在 modules/nixos/icons.nix（system 级，greeter 也用它）。
+    // 和 dotfiles/umbriel/config.toml 的 [input.cursor]/[environment] 保持一致。
+    XCURSOR_THEME "Bibata-Modern-Ice"
+    XCURSOR_SIZE "20"
     // CLUTTER_BACKEND "wayland"
     // GDK_BACKEND "wayland,x11,*"
     // QT_QPA_PLATFORM "wayland"

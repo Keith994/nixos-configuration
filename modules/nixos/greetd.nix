@@ -10,9 +10,11 @@ let
     # 启动时直接进入该账户的密码步骤，省掉选用户
     user.default = username;
 
+    # 和 niri / umbriel 会话用同一套光标（包里在 modules/nixos/icons.nix，system 级装，
+    # 所以 greeter 用户也解析得到 share/icons/Bibata-Modern-Ice）
     cursor = {
-      theme = "Adwaita";
-      size = 24;
+      theme = "Bibata-Modern-Ice";
+      size = 20;
     };
 
     # 和 niri 的 xkb layout 保持一致
