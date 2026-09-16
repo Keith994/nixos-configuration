@@ -12,7 +12,7 @@
 # noctalia.toml 放最后一个：它是 noctalia 主题模板渲染出来的调色板，要能压过这里的一切颜色。
 # 注意（别手改这一行）：noctalia 的 templates/umbriel/apply.sh 会重排这一行并保证
 # "noctalia.toml" 在最后，格式也可能被它改写成自己的风格，属于预期行为。
-files = [ "outputs.toml", "keybinds.toml", "rules.toml", "noctalia.toml" ]
+files = [ "outputs.toml", "keybinds.toml", "rules.toml", "noctalia.toml"]
 
 [include.optional]
 # 和 niri 的 machine-custom.kdl 同一个用途：机器特有、不进版本库的覆盖。

@@ -1,11 +1,22 @@
-# 占位文件 —— 真正的内容由 noctalia 的主题模板生成并**覆盖**这个文件。
-#
-# 生成方：noctalia 的 share/noctalia/assets/templates/umbriel/{umbriel.toml,apply.sh}
-# 输出路径：$XDG_CONFIG_HOME/umbriel/noctalia.toml（也就是本文件）
-# 触发时机：把 "umbriel" 加进 dotfiles/noctalia/config.toml 的
-#           [theme.templates] builtin_ids 之后，应用一次主题（noctalia msg templates-apply）。
-#
-# 之所以仓库里也留一份：config.toml 的 [include] files 里已经列了 "noctalia.toml"，
-# 而 umbriel 对**必需** include 缺失的处理是"启动即失败"。留个只有注释的合法 TOML，
-# 在 noctalia 还没接管配色之前也能正常起会话（此时用 umbriel 内置的默认配色）。
-# 详见同目录 README.md 第 5 节。
+[colors]
+background = "#090925FF"
+text_primary = "#f3edf7FF"
+text_muted = "#7c80b4FF"
+accent_primary = "#fff59bFF"
+accent_secondary = "#a9aefeFF"
+warning = "#9bfeceFF"
+error = "#fd4663FF"
+insert_hint = "#9bfece80"
+backdrop = "#090925FF"
+
+[colors.border]
+focused = "#fff59bFF"
+unfocused = "#090925FF"
+scratchpad_focused = "#9bfeceFF"
+scratchpad_unfocused = "#02e577FF"
+outer = "#000000FF"
+
+[colors.overview]
+background_tint = "#00000088"
+badge = "#fff59bFF"
+workspace_background = "#000000FF"

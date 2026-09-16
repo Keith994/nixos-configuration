@@ -21,6 +21,7 @@ current="$(
 
 case "$current" in
   dwindle) umbriel msg workspace-set-layout:scrolling ;;
-  scrolling | master) umbriel msg workspace-set-layout:dwindle ;;
+  scrolling) umbriel msg workspace-set-layout:master ;;
+  master) umbriel msg workspace-set-layout:dwindle ;;
   *) : ;; # 读不到（没有输出 / 没有活动工作区）就什么都不做
 esac
