@@ -84,7 +84,7 @@ nixfmt <file.nix>
 | `shell.nix` | zsh：fzf-tab、自动建议、语法高亮、history、别名 `nr/nb/nc/nixcfg`；末尾 `source ~/.ai-api.zsh`（仓库外密钥） |
 | `cli.nix` | fzf、zoxide、eza、bat、direnv(+nix-direnv)，以及 ripgrep/fd/jq/htop/btop 等 |
 | `git.nix` | `programs.git`：main 分支、fetch.prune、editor=nvim、ignore 规则；身份信息从 `~/.config/git/local.conf` include |
-| `starship.nix` | starship 提示符；`~/.config/starship.toml` 是指向 `dotfiles/starship/starship.toml` 的 out-of-store 软链（**必须可写**：noctalia 每次换壁纸都往里注入调色板块，所以那个文件被忽略、手写原始版跟踪在 `starship.toml.orig`）；`configPath` 必须与文件落点一致（见第 8 节第 2 条） |
+| `starship.nix` | starship 提示符；`~/.config/starship.toml` 是指向 `dotfiles/starship/starship.toml` 的 out-of-store 软链（**必须可写**：noctalia 每次换壁纸都往里注入调色板块，所以那个文件被忽略、手写原始版跟踪在 `starship.toml.orig`；activation 在它缺失时从 `.orig` 播种）；`configPath` 必须与文件落点一致（见第 8 节第 2 条） |
 | `nvim.nix` | EDITOR/VISUAL=nvim、`vi`/`vim` 别名、编译依赖；`~/.config/nvim` 软链到仓库 |
 | `ghostty.nix` | ghostty（nixpkgs 稳定版）+ zsh 集成；整个 `dotfiles/ghostty` **目录** out-of-store 软链（config 里的相对路径 `shader/`、`themes/` 和 noctalia 写的 `themes/noctalia` 都得落在仓库里，见第 5、8 节；nightly 试过，见第 8 节第 6 条） |
 | `foot.nix` | 装 `foot` / `footclient`，整个 `dotfiles/foot` 目录 out-of-store 软链到 `~/.config/foot`；server 由 niri 启动项拉起（见第 8 节第 13 条） |
@@ -159,9 +159,10 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
 - **`dotfiles/starship/starship.toml` 也属于"被 noctalia 注入"的那一类**，但它走的是另一套办法：
   starship 没有 include 机制，模板只能把 `palette = "noctalia"` + 末尾一段带 marker 的调色板块
   **内联**进这个文件，每次换壁纸都会改一遍。所以运行中那份 `.gitignore` 忽略、**手写原始版**
-  跟踪成 `dotfiles/starship/starship.toml.orig`；要改提示符配置就改 `.orig`，还原 / 新机器：
-  `cp dotfiles/starship/starship.toml.orig dotfiles/starship/starship.toml`
-  （不 cp 的话 `~/.config/starship.toml` 是**悬空软链** → starship 静默回退内置默认配置，没有任何报错）。
+  跟踪成 `dotfiles/starship/starship.toml.orig`；要改提示符配置就改 `.orig`。
+  还原 / 新机器**不用手动**：`home.activation.starshipSeedConfig`（`modules/home/starship.nix`）会在
+  运行中那份**缺失**时从 `.orig` 拷一份过去（只在缺失时动手，绝不覆盖 noctalia 注入的内容）；
+  想把提示符重置回原始版再手动 `cp dotfiles/starship/starship.toml.orig dotfiles/starship/starship.toml`。
 - **例外：`dotfiles/ghostty/config` 照旧跟踪、不忽略** —— noctalia 只往它里面改/加一行
   `theme = noctalia`，而它承载着字体、键位、shader 一大堆手写设置，所以换主题后变脏就正常 review 提交。
 
@@ -201,9 +202,10 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
    指到不存在的路径时 starship 会**静默**回退到内置默认配置（自定义 toml 被整个忽略，看着就像"配置没生效"）。
    现在两边都是 `~/.config/starship.toml`，而它是指向 `dotfiles/starship/starship.toml` 的 out-of-store
    软链（noctalia 的 starship 模板要写穿它），挪文件或改链要一起改。
-   **注意那个目标文件不在版本库里**（它每次换壁纸都被 noctalia 注入，见第 5 节）：新机器 / 还原之后
-   必须先 `cp dotfiles/starship/starship.toml.orig dotfiles/starship/starship.toml` —— 目标不存在时
-   软链是悬空的，starship 一样静默回退默认配置，**全程没有任何报错**。
+   **注意那个目标文件不在版本库里**（它每次换壁纸都被 noctalia 注入，见第 5 节）：目标不存在时
+   软链是悬空的，starship 会静默回退默认配置、**全程没有任何报错** —— 所以
+   `home.activation.starshipSeedConfig` 在它缺失时会从 `.orig` 自动播种一份（只在缺失时动手，
+   不会覆盖 noctalia 注入好的内容）。
 3. 只有单 host / 单 user：新增主机要改 `flake.nix` 的 outputs，并考虑把 `username`、`system` 参数化。
 4. 桌面启动项（`dotfiles/niri/startup.kdl`）里有 `ydotoold`、`polkit-gnome` 等，
    它们并不都由这份 flake 安装 —— 排查"命令找不到"时先确认是 Nix 装的还是手工装的
