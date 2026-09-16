@@ -55,7 +55,7 @@ out-of-store 软链，见第 5 节），不用 rebuild、也不用重开会话�
 | `keys.kdl` | `keybinds.toml` | **全量**翻译（见第 3 节第 2 条） |
 | `rules.kdl` + `noctalia.kdl` + `layouts.kdl` 的 `layer-rule` | `rules.toml` | 窗口规则 + 图层规则 |
 | `machine-custom.kdl` | `machine-custom.toml`（可选 include） | 机器特有覆盖，缺文件不报错 |
-| —（niri 没有对应物） | `noctalia.toml` | noctalia 主题模板渲染出来的调色板（`[include] files` 里列着它，缺失则启动失败），仓库里存一份、模板会**覆盖**它，见第 5 节 |
+| —（niri 没有对应物） | `noctalia.toml` | noctalia 主题模板渲染出来的调色板，**不入库**（见第 5 节）；`[include] files` 里列着它，缺失则 umbriel 启动失败 —— 全新 clone 后要先跑一次主题 |
 | `scripts/satty-last.sh` | `scripts/satty-last.sh` | **原样复用**，它不碰合成器 IPC |
 | `scripts/lock.sh` / `float.sh` / `switch.sh` | 同名脚本 | 逻辑照搬，IPC 换成 umbriel，见第 4 节 |
 | —（niri 没有对应物） | `scripts/toggle-layout.sh` | `Mod+D` 切 dwindle ⇄ scrolling，见下面「与 niri 键位的唯一差异」 |
@@ -228,27 +228,29 @@ include 缺失的处理是"启动即失败"，所以仓库里必须一直留一�
 （`dotfiles/umbriel/noctalia.toml`）。它现在已经是 noctalia 渲染出来的调色板（不再是注释占位），
 渲染写的就是这个文件，**不要手改**。
 
-### 配色现由 noctalia 模板接管
+### 配色由 noctalia 模板接管（渲染产物不入库）
 
-`dotfiles/umbriel/noctalia.toml` 里现在是 noctalia 渲染出来的真实调色板（色值和
-`dotfiles/foot/themes/noctalia` 是同一套，也就是当前主题），不再是注释占位。
+`dotfiles/umbriel/noctalia.toml` 是 noctalia 渲染出来的真实调色板（和 `dotfiles/foot/themes/noctalia`、
+yazi 那套是同一组色值，也就是当前主题），不再是注释占位。
 
-但 `dotfiles/noctalia/config.toml` 的 `builtin_ids` 里目前**没有** `"umbriel"`：
+开关在 **state 层**（GUI 写的那份，优先级高于仓库里的 `dotfiles/noctalia/config.toml`）——
+`~/.local/state/noctalia/settings.toml` 现在写着：
 
 ```toml
 [theme.templates]
-builtin_ids = [ "btop", "cava", "foot", "gtk3", "gtk4", "ghostty", "niri", "qt", "starship" ]
+builtin_ids = [ "btop", "cava", "foot", "gtk3", "gtk4", "ghostty", "niri", "qt", "starship", "umbriel" ]
+community_ids = [ "telegram", "yazi" ]
 ```
 
-所以换主题之后 umbriel 的调色板不会自动跟着变。要让它跟：
+`umbriel` 已经在 builtin 列表里，所以换主题时它的调色板会跟着重渲染；yazi 那套
+（`theme.toml` + `flavors/noctalia.yazi/`）来自**社区**模板，同样会跟着变。仓库 `config.toml` 里
+`builtin_ids` 没列 `umbriel` 并不影响生效（那只是低优先级默认值，要看真实列表请看 state 文件）。
 
-1. 往上面的列表里加 `"umbriel"`；
-2. `sudo nixos-rebuild switch ...`（noctalia 的 `config.toml` 是 store 链接，得 rebuild）；
-3. 应用一次主题（或手动跑一次 noctalia 的 umbriel 模板）。
-
-渲染时 noctalia 会重写 `dotfiles/umbriel/noctalia.toml`，并且**可能把 `config.toml` 里
-`files = [ ... ]` 那一行改写成它自己的排版**（内容等价：`"noctalia.toml"` 保证排在最后）。
-这是模板脚本的预期行为，别去"修"它 —— 仓库里已经因为一次 apply 提交过这种纯格式改动。
+这些渲染产物**都不入库**（`.gitignore` 按路径忽略，清单见 `AGENTS.md` 第 5 节），所以
+**全新 clone（或 `git clean -xdf`）之后必须先跑一次 noctalia 主题**：否则 umbriel 会因为
+`noctalia.toml` 缺失而启动失败。渲染时 noctalia 还会重写 `config.toml` 的 `files = [ ... ]` 行
+（内容等价，`"noctalia.toml"` 保证在最后，排版可能变成它自己的风格）—— 这是模板脚本的预期行为，
+别去"修"它。
 
 ## 6. 其他
 

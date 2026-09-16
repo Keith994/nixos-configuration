@@ -126,7 +126,8 @@ nixfmt <file.nix>
 **noctalia 的主题模板要往这些目录里写文件**（niri 的 `noctalia.kdl` 与 `config.kdl` 里的 include 行、
 foot 的 `themes/noctalia` 与 `foot.ini` 的 include 行、umbriel 的 `noctalia.toml`、ghostty 的
 `themes/noctalia`）。指向只读 store 的软链会让这些写入直接失败（和 rime 是同一类坑，见第 6 节），
-所以这几个目录一律软链到工作区 —— 生成的文件因此也落在仓库里，可以进版本库。
+所以这几个目录一律软链到工作区 —— 生成的文件因此也落在仓库里（哪些该进版本库、哪些刻意忽略，
+见下一小节）。
 
 代价有两条，动手时留意：
 
@@ -135,6 +136,26 @@ foot 的 `themes/noctalia` 与 `foot.ini` 的 include 行、umbriel 的 `noctali
   要不要提交由你决定（`.gitignore` 只挡敏感文件，不挡这些）。
 - `~/.config/<app>` 这个路径本身是**符号链接**，不要以为在仓库外新建同名文件能覆盖它；
   改动一律落在 `dotfiles/` 里。
+
+### 刻意不进版本库的：noctalia 模板渲染产物
+
+noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件，换一次主题全部重写，
+提交进去只是噪音，所以 `.gitignore` 按**具体路径**忽略它们：
+
+| 模板 | 仓库内被写掉的路径 | 顺带还改什么 |
+| --- | --- | --- |
+| `niri` | `dotfiles/niri/noctalia.kdl` | 往 `config.kdl` 追加 `include "noctalia.kdl"` |
+| `foot` | `dotfiles/foot/themes/noctalia` | 往 `foot.ini` 插 `include=…` 行 |
+| `ghostty` | `dotfiles/ghostty/themes/noctalia` | 往 `config` 追加/改写 `theme = noctalia` |
+| `umbriel` | `dotfiles/umbriel/noctalia.toml` | 重写 `config.toml` 的 `[include] files` 行 |
+| `yazi`（**社区**模板） | `dotfiles/yazi/theme.toml`、`dotfiles/yazi/flavors/noctalia.yazi/` | `apply.sh` 会整份覆盖 `theme.toml` |
+
+- **不要**写 `**/noctalia` / `**/noctalia.*` 这种宽规则：它会连带命中手写的 `dotfiles/noctalia/` 目录，
+  而 noctalia 会把那个目录下所有 `*.toml` 合并加载 —— 被忽略就等于"改了配置不生效 / 提交时漏文件"。
+- 代价：这些文件正是各配置里 include 的目标，所以**全新 clone（或 `git clean -xdf`）之后必须先跑一次
+  noctalia 主题**，否则 niri / foot 报 include 缺失、umbriel 直接起不来、yazi 掉回默认主题。
+- 只影响运行时渲染、不影响 flake 求值：flake 源码本来就不含未跟踪/被忽略的文件，而运行时读的是
+  out-of-store 软链指向的工作区。
 
 ## 6. Rime 特例（不要"顺手优化"掉）
 
@@ -233,6 +254,11 @@ foot 的 `themes/noctalia` 与 `foot.ini` 的 include 行、umbriel 的 `noctali
       跑 `noctalia config validate`，键名写错直接 build 失败（这是好事）；
     - 运行时配置分两层：`~/.config/noctalia/*.toml`（仓库软链，只读）优先级低，
       `~/.local/state/noctalia/settings.toml`（GUI/IPC 写的）优先级高 —— 改了仓库配置不生效时先看/删后者；
+    - **模板选择也在 state 层**：真正生效的是 `settings.toml` 的 `[theme.templates]`（现在是
+      `builtin_ids = [ … "umbriel" ]` + `community_ids = [ "telegram", "yazi" ]`），仓库那份
+      `dotfiles/noctalia/config.toml` 里的列表只是低优先级默认值。判断"某个模板会不会跑、会写哪些文件"，
+      要去看 state 文件 + `~/.local/state/noctalia/community-templates/`；
+    - 模板的渲染产物**不入库**（`.gitignore` 按路径忽略，清单见第 5 节）；
     - 系统 nixpkgs 26.05 里虽然有 `pkgs.noctalia`，但版本比上游 flake 旧、也没有模块，不要混用。
 15. umbriel 是 noctalia 官方的 wlroots 合成器，**只是会话选择器里的可选测试会话**（greetd 的
     `session.default` 仍是 `niri`）。要点：
