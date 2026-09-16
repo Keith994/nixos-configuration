@@ -34,5 +34,12 @@
     ];
   };
 
+  # 会话层面 dotfiles/niri/environment.kdl 把 LANG 设成了 zh_CN.UTF-8，但 NixOS 默认只生成
+  # en_US.UTF-8 / C.UTF-8，那个 locale 一直不存在 —— foot 会明确警告
+  # "invalid locale, falling back to 'C.UTF-8'"，其它程序则是静默退回 C。
+  # 默认 LANG 保持 en_US.UTF-8（/etc/locale.conf），只把 zh_CN 加进支持的 locale 集合。
+  i18n.defaultLocale = "en_US.UTF-8";
+  i18n.extraLocales = [ "zh_CN.UTF-8/UTF-8" ];
+
   system.stateVersion = "26.05";
 }

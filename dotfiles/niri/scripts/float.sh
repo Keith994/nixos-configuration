@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 
 window_focused=$(niri msg --json windows | jq -r '.[] | select(.is_focused == true)')
 floating=$(echo "$window_focused" | jq -r '.is_floating')

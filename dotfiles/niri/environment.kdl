@@ -26,4 +26,17 @@ environment {
     // AMD_VULKAN_ICD "RADV" // default editor
     //SACLE
     // GDK_DPI_SCALE "1.67"
+
+    // Clash Verge 的「系统代理」只写 GNOME 的 dconf，而 niri 不是 GNOME：
+    // Chromium/Electron 在非 GNOME 桌面下根本不读 gsettings（只认环境变量），
+    // 所以这里直接给 niri 及其所有子进程导出，等于把 modules/home/shell.nix 里
+    // 那个 vpn 别名（只对跑了 vpn 的交互式 shell 生效）变成整个会话的默认值。
+    // 端口取 dotfiles/niri 之外 clash-verge.yaml 的 mixed-port；它同时支持
+    // HTTP 和 SOCKS5，所以 all_proxy 用 socks5 也能复用同一个口。
+    // 注意：clash-verge 没在跑（或改了端口）时，带这些变量的程序会直接连不上网。
+    // http_proxy "http://127.0.0.1:10800"
+    // https_proxy "http://127.0.0.1:10800"
+    // all_proxy "socks5://127.0.0.1:10800"
+    // 本机与局域网流量必须绕过代理，否则连不上这类服务。
+    no_proxy "localhost,127.0.0.1,::1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12"
 }

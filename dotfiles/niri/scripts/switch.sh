@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 
 app_id=$(niri msg --json windows | jq -r --arg app "$1" '.[] | select(.app_id == $app) | .id' | head -1)
 
