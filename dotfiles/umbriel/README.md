@@ -55,7 +55,7 @@ out-of-store 软链，见第 5 节），不用 rebuild、也不用重开会话�
 | `keys.kdl` | `keybinds.toml` | **全量**翻译（见第 3 节第 2 条） |
 | `rules.kdl` + `noctalia.kdl` + `layouts.kdl` 的 `layer-rule` | `rules.toml` | 窗口规则 + 图层规则 |
 | `machine-custom.kdl` | `machine-custom.toml`（可选 include） | 机器特有覆盖，缺文件不报错 |
-| —（niri 没有对应物） | `noctalia.toml` | 仓库里先放的一份"只有注释"的占位；noctalia 主题模板会**覆盖**它，见第 5 节 |
+| —（niri 没有对应物） | `noctalia.toml` | noctalia 主题模板渲染出来的调色板（`[include] files` 里列着它，缺失则启动失败），仓库里存一份、模板会**覆盖**它，见第 5 节 |
 | `scripts/satty-last.sh` | `scripts/satty-last.sh` | **原样复用**，它不碰合成器 IPC |
 | `scripts/lock.sh` / `float.sh` / `switch.sh` | 同名脚本 | 逻辑照搬，IPC 换成 umbriel，见第 4 节 |
 | —（niri 没有对应物） | `scripts/toggle-layout.sh` | `Mod+D` 切 dwindle ⇄ scrolling，见下面「与 niri 键位的唯一差异」 |
@@ -217,34 +217,38 @@ out-of-store 软链，见第 5 节），不用 rebuild、也不用重开会话�
 ## 5. 为什么 umbriel 的配置目录是 out-of-store 软链
 
 `modules/home/umbriel.nix` 把 `~/.config/umbriel` 整目录软链到 `dotfiles/umbriel`，
-而不是像 niri 那样用 store 逐文件软链。原因是 **noctalia 要往里写文件**：
+而不是走 store 软链（niri / yazi 现在也都是整目录 out-of-store，完整理由见 `AGENTS.md` 第 5 节）。
+原因是 **noctalia 要往里写文件**：
 `share/noctalia/assets/templates/umbriel/apply.sh` 会往 `config.toml` 的 `[include]` 里插
 `"noctalia.toml"`，模板本身还会渲染出 `~/.config/umbriel/noctalia.toml`（调色板）。
 只读的 store 软链会让那次写入失败（和 rime / foot 是同一类坑，见 `AGENTS.md` 第 6、8 节）。
 
 另外 `config.toml` 的 `[include] files` 里**已经**列了 `"noctalia.toml"`：umbriel 对必需
-include 缺失的处理是"启动即失败"，所以仓库里放了一份只有注释的合法 TOML 占位
-（`dotfiles/umbriel/noctalia.toml`），noctalia 还没接管配色之前也能正常起会话。
+include 缺失的处理是"启动即失败"，所以仓库里必须一直留一份合法的 TOML
+（`dotfiles/umbriel/noctalia.toml`）。它现在已经是 noctalia 渲染出来的调色板（不再是注释占位），
+渲染写的就是这个文件，**不要手改**。
 
-### 配色还差一步（本次刻意没动）
+### 配色现由 noctalia 模板接管
 
-`dotfiles/noctalia/config.toml` 里现在是：
+`dotfiles/umbriel/noctalia.toml` 里现在是 noctalia 渲染出来的真实调色板（色值和
+`dotfiles/foot/themes/noctalia` 是同一套，也就是当前主题），不再是注释占位。
+
+但 `dotfiles/noctalia/config.toml` 的 `builtin_ids` 里目前**没有** `"umbriel"`：
 
 ```toml
 [theme.templates]
 builtin_ids = [ "btop", "cava", "foot", "gtk3", "gtk4", "ghostty", "niri", "qt", "starship" ]
 ```
 
-**没有 `"umbriel"`** —— 按"其他不要动"的要求，这次没有改它。所以 umbriel 现在用的是
-它自己的内置默认配色（也是深色，能用）。想让 noctalia 接管 umbriel 的配色：
+所以换主题之后 umbriel 的调色板不会自动跟着变。要让它跟：
 
 1. 往上面的列表里加 `"umbriel"`；
-2. `sudo nixos-rebuild switch ...`（noctalia 的 config 是 store 链接，得 rebuild）；
-3. 应用一次主题（或 `noctalia msg templates-apply`）。
+2. `sudo nixos-rebuild switch ...`（noctalia 的 `config.toml` 是 store 链接，得 rebuild）；
+3. 应用一次主题（或手动跑一次 noctalia 的 umbriel 模板）。
 
-之后 noctalia 会渲染 `dotfiles/umbriel/noctalia.toml`，并且**可能把 `config.toml` 里
+渲染时 noctalia 会重写 `dotfiles/umbriel/noctalia.toml`，并且**可能把 `config.toml` 里
 `files = [ ... ]` 那一行改写成它自己的排版**（内容等价：`"noctalia.toml"` 保证排在最后）。
-这是模板脚本的预期行为，别去"修"它。
+这是模板脚本的预期行为，别去"修"它 —— 仓库里已经因为一次 apply 提交过这种纯格式改动。
 
 ## 6. 其他
 
@@ -252,7 +256,7 @@ builtin_ids = [ "btop", "cava", "foot", "gtk3", "gtk4", "ghostty", "niri", "qt",
   它在不跑合成器的情况下就能报错（错误面板也会在会话里显示，最多列 6 条）。
 - `dotfiles/umbriel/machine-custom.toml` 是可选的（`[include.optional]`），缺文件**不报错**；
   niri 那边缺 `machine-custom.kdl` 会报错、按 `AGENTS.md` 第 8 节第 7 条忽略即可，两件事无关。
-- `AGENTS.md` 第 5 节的"dotfiles 挂载方式"表还没有 umbriel 这一行（新增的 out-of-store 目录），
-  本次没改 AGENTS.md，需要的话自己补：`umbriel`（整目录 out-of-store，改完不用 rebuild）。
+- `AGENTS.md` 第 5 节的"dotfiles 挂载方式"表、以及第 8 节第 15 条（umbriel 输入 / 会话注册 /
+  编译代价），都已经补上了，改 umbriel 之前先看这两处。
 - 回滚 = 删掉 `hosts/nixos-adol/default.nix` 与 `home/keith/default.nix` 里那两行 import
   （以及 `flake.nix` 的 umbriel 输入和 `dotfiles/umbriel/`）。niri 侧没有被改过任何一行。
