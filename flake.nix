@@ -30,6 +30,21 @@
         home-manager.follows = "home-manager";
       };
     };
+
+    # Umbriel：noctalia 官方的 wlroots 合成器。只作为 greetd 里的**额外可选测试会话**，
+    # 不动 niri 主线（greetd.nix 的 session.default 仍然是 "niri"）。
+    # 和 noctalia 一样刻意 **不加** inputs.nixpkgs.follows：上游 flake 自带 nixos-unstable pin，
+    # 而 umbriel 要 wlroots 0.20.1+ / C++23，跟着本仓库的 nixos-26.05 混编风险更大；
+    # 它没有 cachix 缓存，跟不跟 nixpkgs 都要本地编译（首次 switch 会编译 umbriel +
+    # xdg-desktop-portal-umbriel，比较久）。接线在 modules/nixos/umbriel.nix，配置在 dotfiles/umbriel/。
+    #
+    # 用 git+https 而不是 github:（上游 README 也推荐这种写法）：github: 走 api.github.com
+    # 解析分支，未认证限额只有 60 次/小时，共享出口 IP 一打满 `nix flake lock` 就 403；
+    # git+https 走 git 协议，不碰那个接口。它自带的 portal 输入同理覆盖掉。
+    umbriel = {
+      url = "git+https://github.com/noctalia-dev/umbriel";
+      inputs.xdg-desktop-portal-umbriel.url = "git+https://github.com/noctalia-dev/xdg-desktop-portal-umbriel";
+    };
   };
 
   outputs =

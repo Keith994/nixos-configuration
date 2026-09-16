@@ -1,0 +1,174 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# 窗口 / 图层规则 —— 对应 dotfiles/niri/rules.kdl + noctalia.kdl + layouts.kdl 里的 layer-rule
+#
+# 和 niri 有两处**结构性差异**，翻译时绕不开（细节见 README.md）：
+# 1) 一条规则里 match.app_id / match.title / ... 之间是 AND；niri 的多个 match 行是 OR。
+#    所以 niri 那种"一个规则里堆 4 个 matcher"的写法必须拆成多条规则。
+# 2) 没有 exclude / 否定匹配（niri 的微信那条规则就因为这个没移植）。
+#
+# 规则是叠加的：后面的规则覆盖前面同名的设置，所以"对所有窗口生效"的条目放最前面。
+# ─────────────────────────────────────────────────────────────────────────────
+
+# niri rules.kdl 第一条：所有窗口 background-effect { blur true }
+[[window_rule]]
+blur = true
+
+# niri rules.kdl: window-rule { opacity 0.90; }（所有窗口）
+[[window_rule]]
+opacity = 0.90
+
+# niri rules.kdl: window-rule { match is-active=false; opacity 0.80; }
+[[window_rule]]
+match.is_focused = false
+opacity = 0.80
+
+# niri rules.kdl: 终端默认列宽 0.555（niri 里是一个规则里 4 个 app-id = OR）
+[[window_rule]]
+match.app_id = "^org\\.wezfurlong\\.wezterm$"
+default_width = 0.555
+
+[[window_rule]]
+match.app_id = "^Alacritty$"
+default_width = 0.555
+
+[[window_rule]]
+match.app_id = "^com\\.mitchellh\\.ghostty$"
+default_width = 0.555
+
+[[window_rule]]
+match.app_id = "^kitty$"
+default_width = 0.555
+
+# niri rules.kdl: chatbox / obsidian 列宽 0.50
+[[window_rule]]
+match.app_id = "^xyz\\.chatboxapp\\.app$"
+default_width = 0.50
+
+[[window_rule]]
+match.app_id = "^obsidian$"
+default_width = 0.50
+
+# niri rules.kdl: fcitx5 / firefox(我的足迹) / firefox(画中画) / xarchiver / firefox(PiP) 开浮动
+# 带 title 的那几条在 niri 里本身就是"app-id AND title"，这里保持 AND。
+[[window_rule]]
+match.app_id = "fcitx5"
+default_floating = true
+
+[[window_rule]]
+match.app_id = "firefox"
+match.title = "我的足迹"
+default_floating = true
+
+[[window_rule]]
+match.app_id = "^firefox$"
+match.title = "画中画"
+default_floating = true
+
+[[window_rule]]
+match.app_id = "^xarchiver$"
+default_floating = true
+
+[[window_rule]]
+match.app_id = "firefox$"
+match.title = "^Picture-in-Picture$"
+default_floating = true
+
+# niri rules.kdl: com.tmux.ghostty 开在 workspace "2"（是**名字**，不是索引）
+[[window_rule]]
+match.app_id = "^com\\.tmux\\.ghostty$"
+default_output = "eDP-1"
+default_workspace = "2"
+
+# niri rules.kdl: firefox / google-chrome 开在 workspace "3" 并最大化（OR，拆两条）
+[[window_rule]]
+match.app_id = "^firefox$"
+default_output = "eDP-1"
+default_workspace = "3"
+default_maximize = true
+
+[[window_rule]]
+match.app_id = "^google-chrome$"
+default_output = "eDP-1"
+default_workspace = "3"
+default_maximize = true
+
+# niri rules.kdl: ^dropdown$ 贴屏幕上沿、宽 0.93 高 0.55
+[[window_rule]]
+match.app_id = "^dropdown$"
+default_floating = true
+default_position = { x = 0, y = 0, anchor = "top" }
+default_width = 0.93
+default_height = 0.55
+
+# niri rules.kdl: 致景科技会议 / Meeting 浮在左上角且不抢焦点（OR，拆两条）
+[[window_rule]]
+match.title = "^致景科技会议$"
+default_floating = true
+default_focused = false
+default_position = { x = 0, y = 0, anchor = "top_left" }
+
+[[window_rule]]
+match.app_id = "^Meeting$"
+default_floating = true
+default_focused = false
+default_position = { x = 0, y = 0, anchor = "top_left" }
+
+# niri rules.kdl: wechat 打开时不抢焦点（搜索框失焦那个问题）
+[[window_rule]]
+match.app_id = "^wechat$"
+default_focused = false
+
+# niri rules.kdl: btop / yazi / terminal_app 这类"看一眼"的终端浮动，宽高 0.93（OR，拆三条）
+[[window_rule]]
+match.app_id = "^terminal_app$"
+default_floating = true
+default_width = 0.93
+default_height = 0.93
+
+[[window_rule]]
+match.app_id = "^btop_terminal$"
+default_floating = true
+default_width = 0.93
+default_height = 0.93
+
+[[window_rule]]
+match.app_id = "^yazi_terminal$"
+default_floating = true
+default_width = 0.93
+default_height = 0.93
+
+# niri rules.kdl: imv / satty 浮动 0.8
+[[window_rule]]
+match.app_id = "^imv$"
+default_floating = true
+default_width = 0.8
+default_height = 0.8
+
+[[window_rule]]
+match.app_id = "^com\\.gabm\\.satty$"
+default_floating = true
+default_width = 0.8
+default_height = 0.8
+
+# niri noctalia.kdl: noctalia 设置窗口浮动，固定 1080x920
+# （niri 那条还顺手设了 geometry-corner-radius 12，umbriel 只能全局设 —— 见 config.toml 的 appearance.corner_radius）
+[[window_rule]]
+match.app_id = "^dev\\.noctalia\\.Noctalia$"
+default_floating = true
+default_size = [ 1080, 920 ]
+
+# ── 图层规则（layer rule）────────────────────────────────────────────────────
+# niri noctalia.kdl: noctalia 的 bar / 通知 / dock / 面板 / OSD 自己上报模糊区域，
+# 关掉 xray（blur_optimized = false）才更接近真实毛玻璃。
+[[layer_rule]]
+match.namespace = "^noctalia-(bar-[^\"]+|notification|dock|panel|attached-panel|osd|desktop-widget-[^\"]*)$"
+blur = true
+blur_ignore_alpha = 0.5
+blur_popups = true
+blur_optimized = false
+
+# niri noctalia.kdl: 窗口切换器（Alt+Tab）整块模糊
+[[layer_rule]]
+match.namespace = "^noctalia-window-switcher$"
+blur = true
+blur_optimized = false

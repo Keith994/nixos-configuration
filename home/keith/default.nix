@@ -17,6 +17,7 @@
     ../../modules/home/devtools.nix
     ../../modules/home/yazi.nix
     ../../modules/home/niri.nix
+    ../../modules/home/umbriel.nix
     ../../modules/home/noctalia.nix
     ../../modules/home/rime.nix
     ../../modules/home/ai/deepseek-harness.nix

@@ -12,6 +12,7 @@
 
       ../../modules/nixos/compat.nix
       ../../modules/nixos/niri.nix
+      ../../modules/nixos/umbriel.nix
       ../../modules/nixos/noctalia.nix
       ../../modules/nixos/greetd.nix
       ../../modules/nixos/fcitx5.nix

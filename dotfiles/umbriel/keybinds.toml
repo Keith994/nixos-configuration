@@ -1,0 +1,172 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# 键位 —— 对应 dotfiles/niri/keys.kdl
+#
+# 最重要的一条：umbriel 只要配了 [keybinds] 就**替换**整套内置键位，不是增量叠加，
+# 所以"要保留的每一条都得在这里写出来"（上游文档原话：define every chord that
+# should remain available）。少写一条就等于把它删了。
+#
+# 写法约定（尽量跟 niri 直觉一致）：
+# - Mod = DRM 会话下的 Super（嵌套会话里自动变成 Alt）
+# - 需要 Shift 的符号键仍然写**未加 Shift** 的键名（Mod+Shift+Slash / Mod+Shift+Minus），
+#   umbriel 会额外拿 level-0 符号比对一次
+# - { action = ..., allow_when_locked = true } 对应 niri 的 allow-when-locked=true
+# - cooldown_ms 对应 niri 的 cooldown-ms=
+# ─────────────────────────────────────────────────────────────────────────────
+
+[keybinds]
+
+# ── 系统 / 输入法 ─────────────────────────────────────────────────────────────
+# niri: Mod+0 { spawn-sh "fcitx5 -r -d & disown"; }
+"Mod+0" = "spawn:fcitx5 -r -d"
+
+# ── 帮助 / 热键提示 ───────────────────────────────────────────────────────────
+# niri: Mod+Shift+Slash { show-hotkey-overlay; }
+"Mod+Shift+Slash" = { action = "cheatsheet-toggle", repeat = false }
+
+# ── 终端 ─────────────────────────────────────────────────────────────────────
+# niri: Mod+Return 拉 tmux main 会话；Mod+Shift+Return kitty；Mod+Ctrl+Return ghostty 快速终端
+"Mod+Return" = "spawn:ghostty +new-window -e tmux new-session -A -s main || ghostty -e tmux new-session -A -s main"
+"Mod+Shift+Return" = "spawn:kitty"
+"Mod+Ctrl+Return" = "spawn:ghostty +toggle-quick-terminal"
+
+# ── 音量 / 亮度（锁屏也能用）─────────────────────────────────────────────────
+# niri 那组 XF86* allow-when-locked=true 一一对应
+"XF86AudioLowerVolume" = { action = "spawn:noctalia msg volume-down 3", allow_when_locked = true }
+"XF86AudioRaiseVolume" = { action = "spawn:noctalia msg volume-up 3", allow_when_locked = true }
+"XF86AudioMicMute" = { action = "spawn:noctalia msg mic-mute", allow_when_locked = true }
+"XF86AudioMute" = { action = "spawn:noctalia msg volume-mute", allow_when_locked = true }
+"XF86MonBrightnessDown" = { action = "spawn:noctalia msg brightness-down", allow_when_locked = true }
+"XF86MonBrightnessUp" = { action = "spawn:noctalia msg brightness-up", allow_when_locked = true }
+
+# ── 窗口 / 布局 ──────────────────────────────────────────────────────────────
+"Mod+A" = { action = "overview-toggle", repeat = false }
+"Mod+B" = "spawn:footclient --app-id btop_terminal -- btop"
+# niri: center-column
+"Mod+C" = "column-center"
+# niri: center-visible-columns（umbriel 没有"可见列整体居中"，用浮动窗口居中近似，见 README.md）
+"Mod+Shift+C" = "window-center"
+# niri: maximize-column
+"Mod+M" = "window-toggle-maximize"
+# niri: fullscreen-window
+"Mod+Shift+M" = "window-toggle-fullscreen"
+# niri: ~/.config/niri/scripts/float.sh（已移植到 ~/.config/umbriel/scripts/float.sh）
+"Mod+F" = "spawn:~/.config/umbriel/scripts/float.sh"
+"Mod+Q" = { action = "window-close", repeat = false }
+# niri 的 Mod+O { toggle-window-rule-opacity; } 在 umbriel 没有对应动作，没移植（见 README.md）
+
+# ── 列 / 窗口尺寸 ────────────────────────────────────────────────────────────
+# niri: switch-preset-column-width / switch-preset-window-height
+"Mod+R" = "window-cycle-width"
+"Mod+Shift+R" = "window-cycle-height"
+# niri: set-column-width "-10%" / "+10%"
+"Mod+Minus" = "window-modify-width:-0.1"
+"Mod+Equal" = "window-modify-width:0.1"
+# niri: set-window-height "-10%" / "+10%"
+"Mod+Shift+Minus" = "window-modify-height:-0.1"
+"Mod+Shift+Equal" = "window-modify-height:0.1"
+
+# ── 焦点移动 ─────────────────────────────────────────────────────────────────
+# niri 的 focus-column-or-monitor-* / focus-window-or-workspace-* 在 umbriel 里是
+# window-focus-or-output-* / window-focus-or-workspace-*（名字更啰嗦，语义一致）
+"Mod+H" = "window-focus-or-output-left"
+"Mod+K" = "window-focus-or-workspace-up"
+"Mod+J" = "window-focus-or-workspace-down"
+"Mod+L" = "window-focus-or-output-right"
+"Mod+Home" = "column-focus-first"
+"Mod+End" = "column-focus-last"
+
+# ── 移动窗口 / 列 ────────────────────────────────────────────────────────────
+"Mod+Shift+H" = "window-move-or-output-left"
+"Mod+Shift+J" = "window-move-or-workspace-down"
+"Mod+Shift+K" = "window-move-or-workspace-up"
+"Mod+Shift+L" = "window-move-or-output-right"
+"Mod+Shift+Home" = "column-move-to-first"
+"Mod+Shift+End" = "column-move-to-last"
+
+# ── 工作区切换 ───────────────────────────────────────────────────────────────
+# niri: focus-workspace 1..5（绑定的是索引/位置，不是名字）
+"Mod+1" = "workspace-switch:1"
+"Mod+2" = "workspace-switch:2"
+"Mod+3" = "workspace-switch:3"
+"Mod+4" = "workspace-switch:4"
+"Mod+5" = "workspace-switch:5"
+# niri: Mod+WheelScrollDown/Up cooldown-ms=150 { focus-workspace-down/up; }
+"Mod+WheelDown" = { action = "workspace-next", cooldown_ms = 150 }
+"Mod+WheelUp" = { action = "workspace-previous", cooldown_ms = 150 }
+
+# ── 移动列到工作区 ───────────────────────────────────────────────────────────
+"Mod+Shift+1" = "column-move-to-workspace:1"
+"Mod+Shift+2" = "column-move-to-workspace:2"
+"Mod+Shift+3" = "column-move-to-workspace:3"
+"Mod+Shift+4" = "column-move-to-workspace:4"
+"Mod+Shift+5" = "column-move-to-workspace:5"
+"Mod+Shift+6" = "column-move-to-workspace:6"
+"Mod+Shift+7" = "column-move-to-workspace:7"
+"Mod+Shift+8" = "column-move-to-workspace:8"
+"Mod+Shift+9" = "column-move-to-workspace:9"
+# niri: move-workspace-down / move-workspace-up（整块工作区在列表里上下挪）
+"Mod+Shift+Page_Down" = "workspace-move-down"
+"Mod+Shift+Page_Up" = "workspace-move-up"
+
+# ── 多显示器 ─────────────────────────────────────────────────────────────────
+# niri: focus-monitor-left/right；umbriel 的 output-focus-* 不带环绕，
+# 单屏时按下去会报 "no output to the left"，等价于没反应。
+"Mod+Ctrl+H" = "output-focus-left"
+"Mod+Ctrl+L" = "output-focus-right"
+"Mod+Ctrl+Shift+H" = "column-move-to-output-left"
+"Mod+Ctrl+Shift+L" = "column-move-to-output-right"
+
+# ── 列 / 窗口吞噬与弹出 ──────────────────────────────────────────────────────
+"Mod+BracketLeft" = "window-consume-or-expel-left"
+"Mod+BracketRight" = "window-consume-or-expel-right"
+
+# ── 截图 / 录屏 ──────────────────────────────────────────────────────────────
+# niri 那侧区域/标注截图本来就走的 noctalia IPC，这里原样复用；
+# niri 内置的 screenshot-window / screenshot-screen / screenshot（Mod+F12 那组）
+# 在 umbriel 没有对应动作，改成 noctalia 的 screenshot-fullscreen（见 README.md）。
+"Mod+Shift+S" = "spawn:noctalia msg screenshot-region"
+"Mod+Ctrl+S" = "spawn:noctalia msg screenshot-annotate"
+# satty 只负责标注"最新一张截图"，脚本原样从 niri 那边搬过来
+"Mod+Shift+A" = "spawn:~/.config/umbriel/scripts/satty-last.sh"
+"Mod+F12" = "spawn:noctalia msg screenshot-fullscreen pick"
+"Mod+Shift+F12" = "spawn:noctalia msg screenshot-fullscreen"
+"Mod+Shift+Ctrl+S" = "spawn:noctalia msg screenshot-fullscreen all"
+
+# ── 启动器 / 面板（noctalia v5 IPC，和 niri 完全一致）────────────────────────
+"Mod+Space" = "spawn:noctalia msg panel-toggle launcher"
+"Mod+Shift+Space" = "spawn:noctalia msg panel-toggle control-center"
+"Mod+E" = { action = "spawn:footclient --app-id yazi_terminal -- yazi", repeat = false }
+"Mod+Shift+E" = { action = "spawn:doom +everywhere", repeat = false }
+"Mod+I" = "spawn:noctalia msg settings-toggle"
+"Mod+W" = "spawn:noctalia msg panel-toggle wallpaper"
+"Mod+Shift+Right" = "spawn:noctalia msg wallpaper-next"
+"Mod+Shift+Left" = "spawn:noctalia msg wallpaper-previous"
+"Mod+Shift+V" = "spawn:noctalia msg panel-toggle clipboard"
+"Mod+Ctrl+Alt+B" = "spawn:noctalia msg bar-toggle"
+"Alt+Tab" = "spawn:noctalia msg window-switcher"
+
+# ── 锁屏 / 电源 ──────────────────────────────────────────────────────────────
+# niri: ~/.config/niri/scripts/lock.sh（已移植到 ~/.config/umbriel/scripts/lock.sh）
+"Ctrl+Alt+L" = "spawn:~/.config/umbriel/scripts/lock.sh"
+"Ctrl+Alt+Delete" = "spawn:noctalia msg panel-toggle session"
+# niri: power-off-monitors
+"Ctrl+Alt+P" = "dpms-off"
+# niri 的 Mod+Escape 是 toggle-keyboard-shortcuts-inhibit，umbriel 没有这个动作；
+# 这里改成 umbriel 内置的退出会话（带确认框）——测试会话得有个顺手退出键。
+# 注意：锁屏状态下 session-quit 会直接退出，不再确认。
+"Mod+Escape" = { action = "session-quit", repeat = false }
+
+# ── 布局切换（umbriel 独有，niri 只有滚动布局所以没对应键）──────────────────
+# Mod+D = 当前工作区在 scrolling ⇄ dwindle 之间切换（脚本，两态，按两下必回原点）。
+# 想用内置的三态循环（scrolling → dwindle → master）就把它换成 "workspace-set-layout:toggle"。
+"Mod+D" = "spawn:~/.config/umbriel/scripts/toggle-layout.sh"
+
+# ── 切换或启动应用 ───────────────────────────────────────────────────────────
+# niri 的 switch.sh（niri msg --json windows + jq）已经移植成 umbriel IPC 版本，
+# 用法不变：先按 app_id 找已开的窗口，找不到再启第二个参数里的命令。
+"Mod+8" = "spawn:~/.config/umbriel/scripts/switch.sh google-chrome google-chrome"
+"Mod+9" = "spawn:~/.config/umbriel/scripts/switch.sh logseq logseq"
+"Mod+T" = "spawn:~/.config/umbriel/scripts/switch.sh org.telegram.desktop Telegram"
+# 注意：niri 里 Mod+D 是 DBeaver，这个键位让给了上面的布局切换，DBeaver 挪到 Mod+Shift+D
+"Mod+Shift+D" = "spawn:~/.config/umbriel/scripts/switch.sh 'DBeaver Enterprise' dbeaver-ee"
+"Mod+N" = "spawn:~/.config/umbriel/scripts/switch.sh Emacs 'emacsclient --alternate-editor= --create-frame'"

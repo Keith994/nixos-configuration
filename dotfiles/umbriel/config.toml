@@ -1,0 +1,216 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Umbriel 主配置 —— 从 dotfiles/niri/*.kdl 逐条翻译过来的。
+# 逐文件对照表、以及所有**对不上**的地方都记在同目录 README.md 里。
+#
+# 这不是默认会话：greetd 的 session.default 仍然是 "niri"，这里只是会话选择器里
+# 多出来的一个测试项（接线见 modules/nixos/umbriel.nix、modules/home/umbriel.nix）。
+# 上游明确说过 config 键名会随版本变，改完先 `umbriel validate` 再重载。
+# ─────────────────────────────────────────────────────────────────────────────
+
+[include]
+# 顺序即覆盖顺序：后面的文件压前面的值，而 [[window_rule]] / [[layer_rule]] 这类列表是累加的。
+# noctalia.toml 放最后一个：它是 noctalia 主题模板渲染出来的调色板，要能压过这里的一切颜色。
+# 注意（别手改这一行）：noctalia 的 templates/umbriel/apply.sh 会重排这一行并保证
+# "noctalia.toml" 在最后，格式也可能被它改写成自己的风格，属于预期行为。
+files = [ "outputs.toml", "keybinds.toml", "rules.toml", "noctalia.toml" ]
+
+[include.optional]
+# 和 niri 的 machine-custom.kdl 同一个用途：机器特有、不进版本库的覆盖。
+# 可选 include 缺文件会被静默忽略（niri 那边缺 machine-custom.kdl 反而会报错，
+# 见仓库 AGENTS.md 第 8 节第 7 条）。
+files = [ "machine-custom.toml" ]
+
+# ── 常规 ─────────────────────────────────────────────────────────────────────
+[general]
+# dotfiles/niri/startup.kdl 的 spawn-at-startup 一一对应。
+# 这些命令都不由本模块提供：fcitx5 在 modules/nixos/fcitx5.nix，noctalia-proxy 在
+# modules/home/noctalia.nix，clash-verge 在 modules/nixos/clash-verge.nix，foot 在 modules/home/foot.nix。
+autostart = [
+  "fcitx5 -r -d",
+  "noctalia-proxy",
+  "clash-verge",
+  "foot --server",
+]
+
+# niri: hotkey-overlay { skip-at-startup; }
+show_cheatsheet = false
+# niri 用 xwayland-satellite，modules/nixos/niri.nix 已经装好并在 PATH 上
+xwayland = true
+# niri 的 debug.honor-xdg-activation-with-invalid-serial 是为了让 noctalia 通知按钮能把窗口点到前台。
+# umbriel 没有"接受无效 serial"这个开关，只有这个总闸：false = 不理会没有邀请的激活请求，
+# 但 spawn: 发出的 token 仍然算用户意图。这里先跟 niri 的观感保持一致；
+# 如果测试时发现"点 noctalia 通知没反应"，把它改成 true 再试（README.md 第 3.2 节有记录）。
+focus_on_activate = false
+honor_restored_maximize = false
+# 注意 niri 的 prefer-no-csd 在 umbriel 里属于 [appearance]（不是 [general]），
+# 写在 general 里是未知键，会进诊断面板 —— 见下面 [appearance] 那段。
+
+# ── 会话环境 ─────────────────────────────────────────────────────────────────
+# dotfiles/niri/environment.kdl 的翻版。差别：XDG_SESSION_TYPE / XDG_CURRENT_DESKTOP /
+# XDG_SESSION_DESKTOP / WAYLAND_DISPLAY / DISPLAY / UMBRIEL_SOCKET 由 umbriel 自己持有，
+# 写在这里会被忽略（niri 那边显式写了 XDG_SESSION_TYPE=wayland，这里必须删掉）。
+# 这些值只在会话启动时生效，改完要重开会话（不是重载配置）。
+[environment]
+QT_QPA_PLATFORMTHEME = "gtk3"
+XDG_MENU_PREFIX = "nixos-"
+# fcitx5 走 waylandFrontend，所以不设 QT_IM_MODULE / GTK_IM_MODULE / SDL_IM_MODULE；
+# XWayland 应用的 XIM 服务名是 fcitx，不是 fcitx5。
+XMODIFIERS = "@im=fcitx"
+EDITOR = "nvim"
+LANG = "zh_CN.UTF-8"
+MOZ_ENABLE_WAYLAND = "1"
+MOZ_WEBRENDER = "1"
+# clash-verge 的"系统代理"只写 dconf，Chromium/Electron 在非 GNOME 会话下不读 gsettings，
+# 所以和 niri 一样给整个会话兜一层本机/局域网绕过。clash-verge 没开时别把
+# http_proxy / https_proxy / all_proxy 那三行打开（打开就是整个会话走代理）。
+no_proxy = "localhost,127.0.0.1,::1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12"
+
+# ── 工作区 ───────────────────────────────────────────────────────────────────
+# 两项都是 umbriel 默认值，写出来只为对齐 niri（niri 没有 back-and-forth，也不留空工作区）。
+[workspaces]
+back_and_forth = false
+empty_above = false
+
+# ── 外观 ─────────────────────────────────────────────────────────────────────
+[appearance]
+# niri: prefer-no-csd
+prefer_no_csd = true
+# niri rules.kdl 浮动窗口 focus-ring width 2
+border_width = 2
+outer_border_width = 0
+# niri noctalia.kdl: window-rule geometry-corner-radius 12
+corner_radius = 12
+drag_opacity = 0.75
+
+# niri rules.kdl: 所有窗口 background-effect { blur true }
+# optimized = true 对应 niri 默认的 xray（noctalia 的那些 layer 在 rules.toml 里单独关掉 xray）。
+[appearance.blur]
+enabled = true
+optimized = true
+passes = 3
+radius = 3
+noise = 0.02
+brightness = 0.9
+contrast = 0.9
+saturation = 1.1
+
+# niri layouts.kdl: shadow { softness 40; offset x=0 y=5 }
+# spread 和 color "#0007" 在 umbriel 没有对应键（见 README.md）。
+[appearance.shadow]
+enabled = true
+softness = 40
+offset_x = 0
+offset_y = 5
+
+# ── 输入 ─────────────────────────────────────────────────────────────────────
+[input]
+# niri config.kdl: clipboard { disable-primary; } —— umbriel 只有"中键粘贴"这一个开关
+middle_click_paste = false
+
+[input.keyboard]
+# niri: xkb { layout "us" }，和 greetd.nix 里的 keyboard.layout 一致
+layout = "us"
+# niri: repeat-delay 200 / repeat-rate 25
+repeat_delay = 200
+repeat_rate = 25
+
+[input.touchpad]
+# niri: touchpad { tap; natural-scroll; accel-speed 0.2; scroll-method "two-finger"; }
+tap = true
+natural_scroll = true
+# accel-speed 0.2 ≈ sensitivity 0.2（近似映射，手感可能要自己再调）
+sensitivity = 0.2
+# scroll-method "two-finger" 在 umbriel 没有对应键，用 libinput 默认值
+
+[input.cursor]
+# niri: cursor { xcursor-size 24; hide-when-typing; }
+size = 24
+hide_when_typing = true
+# niri: warp-mouse-to-focus
+follows_focus = true
+
+[input.focus]
+# niri 里 focus-follows-mouse 那行是注释掉的，这里保持关
+follows_mouse = false
+
+# ── 布局 ─────────────────────────────────────────────────────────────────────
+[layout]
+# niri 默认就是横向滚动的列布局
+mode = "scrolling"
+# niri: gaps 0.5 —— umbriel 的 gap 是整数像素，四舍五入成 1
+gap = 1
+# niri: preset-column-widths { proportion 0.5; proportion 1.0; }
+# 注意 umbriel 的宽/高循环共用这一个列表，niri 单独给的 preset-window-heights 没地方放
+width_presets = [ 0.5, 1.0 ]
+
+[layout.struts]
+# niri: struts { left 1; right 1; top 1; bottom 1; }
+left = 1
+right = 1
+top = 1
+bottom = 1
+
+[layout.scrolling]
+default_width_fraction = 0.5
+# niri 没有 always-center-single-column，且 center-focused-column 是 "never"
+center_underfull_strip = false
+center_focused = "never"
+
+# ── 动画 ─────────────────────────────────────────────────────────────────────
+# niri 的 spring 直接写成 umbriel 的 "spring:<damping>,<stiffness>" 字符串。
+# spring 曲线不吃 duration_ms（和概览 filmstrip 的默认 spring 一样）。
+[animation]
+enabled = true
+duration_ms = 250
+curve = "easeout"
+
+# niri: window-open duration-ms 150 curve "ease-out-expo"
+[animation.windows_in]
+enabled = true
+duration_ms = 150
+curve = "easeout"
+style = "popin"
+
+# niri: window-close duration-ms 150 curve "ease-out-quad"
+[animation.windows_out]
+enabled = true
+duration_ms = 150
+curve = "easeout"
+style = "fade"
+
+# niri: window-movement / window-resize spring damping-ratio=1.0 stiffness=800
+[animation.windows_move]
+enabled = true
+curve = "spring:1,800"
+
+# niri: workspace-switch spring damping-ratio=1.0 stiffness=1000
+# （这个值正好是 umbriel 概览 filmstrip 的默认 spring）
+[animation.workspaces]
+enabled = true
+curve = "spring:1,1000"
+
+# niri: overview-open-close spring damping-ratio=1.0 stiffness=800
+[animation.overview]
+enabled = true
+curve = "easeout"
+duration_ms = 250
+workspace_curve = "spring:1,800"
+
+# niri 没有 scratchpad；umbriel 的这个默认是关的，留着是因为要用得先定义 [[scratchpad]]。
+[animation.scratchpad]
+enabled = false
+
+# ── 热区 ─────────────────────────────────────────────────────────────────────
+# niri: gestures { hot-corners { off } }
+# umbriel 打包的示例配置默认开了左上角，这里显式四个全关，和 niri 的观感一致。
+[hot_corners.top_left]
+enabled = false
+
+[hot_corners.top_right]
+enabled = false
+
+[hot_corners.bottom_left]
+enabled = false
+
+[hot_corners.bottom_right]
+enabled = false
