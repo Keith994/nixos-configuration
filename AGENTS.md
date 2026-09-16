@@ -86,7 +86,7 @@ nixfmt <file.nix>
 | `git.nix` | `programs.git`：main 分支、fetch.prune、editor=nvim、ignore 规则；身份信息从 `~/.config/git/local.conf` include |
 | `starship.nix` | starship 提示符 + `dotfiles/starship/starship.toml`（**必须可写**：noctalia 的 starship 模板会改写它，所以是 out-of-store 软链）；`configPath` 必须与文件落点一致（见第 8 节第 2 条） |
 | `nvim.nix` | EDITOR/VISUAL=nvim、`vi`/`vim` 别名、编译依赖；`~/.config/nvim` 软链到仓库 |
-| `ghostty.nix` | ghostty（nixpkgs 稳定版）+ zsh 集成；只把 `config` 软链到仓库（nightly 试过，见第 8 节第 6 条） |
+| `ghostty.nix` | ghostty（nixpkgs 稳定版）+ zsh 集成；整个 `dotfiles/ghostty` **目录** out-of-store 软链（config 里的相对路径 `shader/`、`themes/` 和 noctalia 写的 `themes/noctalia` 都得落在仓库里，见第 5、8 节；nightly 试过，见第 8 节第 6 条） |
 | `foot.nix` | 装 `foot` / `footclient`，整个 `dotfiles/foot` 目录 out-of-store 软链到 `~/.config/foot`；server 由 niri 启动项拉起（见第 8 节第 13 条） |
 | `tmux.nix` | tmux，配置用 `builtins.readFile ../../dotfiles/tmux/tmux.conf` |
 | `mpv.nix` | `pkgs.mpv.override`（挂 `mpvScripts.mpris`，让 noctalia 的媒体组件/媒体键能看到它）+ `dotfiles/mpv/{mpv.conf,input.conf}` 两个**单文件** out-of-store 软链（不整目录链：mpv 往 `~/.config/mpv/watch_later/` 写进度）；键位是 vim 风格 |
@@ -110,7 +110,7 @@ nixfmt <file.nix>
 
 | 目标 | 方式 | 改完需要 rebuild？ |
 | --- | --- | --- |
-| `nvim`、`ghostty/config`、`foot`、`niri`、`yazi`、`umbriel`（整目录） | `mkOutOfStoreSymlink` 指向 `~/nix-config/dotfiles/...` | 否，保存即生效（foot 要重启 server 才读新配置，见第 8 节第 13 条；niri 会自己重载，umbriel 热重载） |
+| `nvim`、`ghostty`、`foot`、`niri`、`yazi`、`umbriel`（整目录） | `mkOutOfStoreSymlink` 指向 `~/nix-config/dotfiles/...` | 否，保存即生效（foot 要重启 server 才读新配置，见第 8 节第 13 条；niri 会自己重载，umbriel 热重载） |
 | `mpv/mpv.conf`、`mpv/input.conf`（单文件） | `mkOutOfStoreSymlink` 指向 `~/nix-config/dotfiles/mpv/*`：**不**整目录链，mpv 要往 `~/.config/mpv/watch_later/` 写播放进度 | 否，保存即生效 |
 | `fontconfig/fonts.conf` | `xdg.configFile` 普通 source，落点 `~/.config/fontconfig/fonts.conf` | 是 |
 | `noctalia/config.toml` | `programs.noctalia.settings` 指向仓库文件，构建期先 `noctalia config validate` 再软链 | 是 |
@@ -146,7 +146,7 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
 | --- | --- | --- |
 | `niri` | `dotfiles/niri/noctalia.kdl` | 往 `config.kdl` 追加 `include "noctalia.kdl"` |
 | `foot` | `dotfiles/foot/themes/noctalia` | 往 `foot.ini` 插 `include=…` 行 |
-| `ghostty` | `dotfiles/ghostty/themes/noctalia` | 往 `config` 追加/改写 `theme = noctalia` |
+| `ghostty` | `dotfiles/ghostty/themes/noctalia` | 往 `config` 追加/改写 `theme = noctalia`（config 是手写 + 会被改写，照旧跟踪） |
 | `umbriel` | `dotfiles/umbriel/noctalia.toml` | 重写 `config.toml` 的 `[include] files` 行 |
 | `yazi`（**社区**模板） | `dotfiles/yazi/theme.toml`、`dotfiles/yazi/flavors/noctalia.yazi/` | `apply.sh` 会整份覆盖 `theme.toml` |
 
@@ -156,10 +156,13 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
   noctalia 主题**，否则 niri / foot 报 include 缺失、umbriel 直接起不来、yazi 掉回默认主题。
 - 只影响运行时渲染、不影响 flake 求值：flake 源码本来就不含未跟踪/被忽略的文件，而运行时读的是
   out-of-store 软链指向的工作区。
-- **例外：`dotfiles/starship/starship.toml` 照旧跟踪**。starship 没有 include 机制，noctalia 只能把
-  调色板**内联**写进这个文件（重写 `palette = ...` 那行 + 末尾追加一段带 marker 的块，其余内容保留），
-  而它同时又是手写配置、且必须存在（少了它提示符就没配置了），所以不能忽略 —— 换主题后它会变脏，
-  看 diff 再决定提交。它的写入口是 `~/.config/starship.toml` 这条 out-of-store 软链。
+- **例外：两个「手写 + 被 noctalia 改写」的文件照旧跟踪**，别顺手把它们也忽略掉：
+  - `dotfiles/starship/starship.toml`：starship 没有 include 机制，调色板只能**内联**进去
+    （重写 `palette = ...` 那行 + 末尾追加一段带 marker 的块，其余内容保留），而它又是必须存在的手写配置；
+  - `dotfiles/ghostty/config`：apply.sh 会把 `theme =` 改成/追加 `theme = noctalia`，而它承载着字体、
+    键位、shader 那一大堆手写设置。
+  两者换主题后都会变脏 —— 看 diff 再决定提交（写入口分别是 `~/.config/starship.toml` 和
+  `~/.config/ghostty/config` 这两条 out-of-store 软链）。
 
 ## 6. Rime 特例（不要"顺手优化"掉）
 
@@ -221,7 +224,12 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
    - 上游 flake **不要**加 `inputs.nixpkgs.follows`（它自带 pin 的 zig overlay 和 nixpkgs）；
    - 它的包不在 cache.nixos.org 上，得加 `https://ghostty.cachix.org` 才不用本地 zig build；
    - nixpkgs 的 `pkgs.ghostty-bin` 只支持 darwin（macOS `.dmg` 重打包），Linux 上没用；
-   - `dotfiles/ghostty/config` 是 out-of-store 软链，改配置本来就不用 rebuild。
+   - `dotfiles/ghostty` 是**整目录** out-of-store 软链（见第 5 节），改配置本来就不用 rebuild —— 但别改回
+     只链 `config` 单文件：config 里的相对路径是按 `~/.config/ghostty/` 解析的，单文件链时那里没有
+     `shader/`，日志里会固定出现
+     `warning(generic_renderer): error loading custom shaders err=error.FileNotFound`
+     （`custom-shader = shader/cursor_warp.glsl` 实测就这样静默失效过），`themes/` 读到的也会是
+     仓库外手工拷的那份。
 7. 忽略 niri 的 `machine-custom.kdl` 报错：`config.kdl` 无条件 include 它，而这个文件不进版本库
    （`.git/info/exclude` 里挡着）。umbriel 的对应物 `machine-custom.toml` 是 `[include.optional]`，
    缺文件静默忽略、不报错 —— 两件事无关，别混。
@@ -263,9 +271,9 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       `builtin_ids = [ … "umbriel" ]` + `community_ids = [ "telegram", "yazi" ]`），仓库那份
       `dotfiles/noctalia/config.toml` 里的列表只是低优先级默认值。判断"某个模板会不会跑、会写哪些文件"，
       要去看 state 文件 + `~/.local/state/noctalia/community-templates/`；
-    - 模板的渲染产物**不入库**（`.gitignore` 按路径忽略，清单见第 5 节）；唯一例外是 starship：
-      它没有 include，调色板只能内联进手写配置 `dotfiles/starship/starship.toml`，所以那个文件照旧跟踪
-      （被 out-of-store 软链到 `~/.config/starship.toml`，apply 时写穿它，见第 5 节）；
+    - 模板的渲染产物**不入库**（`.gitignore` 按路径忽略，清单见第 5 节）；例外是那两个「手写 + 被
+      noctalia 改写」的文件 —— `dotfiles/starship/starship.toml` 与 `dotfiles/ghostty/config` 照旧跟踪
+      （写入口是各自的 out-of-store 软链，见第 5 节）；
     - 系统 nixpkgs 26.05 里虽然有 `pkgs.noctalia`，但版本比上游 flake 旧、也没有模块，不要混用。
 15. umbriel 是 noctalia 官方的 wlroots 合成器，**只是会话选择器里的可选测试会话**（greetd 的
     `session.default` 仍是 `niri`）。要点：
