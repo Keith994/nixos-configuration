@@ -1,8 +1,7 @@
-{ ... }:
+{ config, ... }:
 
 {
-  xdg.configFile."niri" = {
-    source = ../../dotfiles/niri;
-    recursive = true;
-  };
+  xdg.configFile."niri".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/dotfiles/niri";
+
 }

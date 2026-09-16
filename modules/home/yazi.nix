@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 {
   programs.yazi = {
@@ -16,8 +16,6 @@
       imagemagick
     ];
   };
-  xdg.configFile."yazi" = {
-    source = ../../dotfiles/yazi;
-    recursive = true;
-  };
+  xdg.configFile."yazi".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/dotfiles/yazi";
 }
