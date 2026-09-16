@@ -32,7 +32,7 @@ modules/nixos/*.nix           # 系统级模块
 modules/home/*.nix            # 用户级模块（home-manager）
 modules/home/ai/*.nix         # AI 工具（dsh）
 dotfiles/                     # 真实配置文件，按程序分目录
-  nvim/  niri/  umbriel/  ghostty/  foot/  tmux/  yazi/  rime/  noctalia/  fontconfig/  mpv/
+  nvim/  niri/  umbriel/  ghostty/  foot/  tmux/  yazi/  rime/  noctalia/  starship/  fontconfig/  mpv/
 ```
 
 ## 3. 常用命令
@@ -84,7 +84,7 @@ nixfmt <file.nix>
 | `shell.nix` | zsh：fzf-tab、自动建议、语法高亮、history、别名 `nr/nb/nc/nixcfg`；末尾 `source ~/.ai-api.zsh`（仓库外密钥） |
 | `cli.nix` | fzf、zoxide、eza、bat、direnv(+nix-direnv)，以及 ripgrep/fd/jq/htop/btop 等 |
 | `git.nix` | `programs.git`：main 分支、fetch.prune、editor=nvim、ignore 规则；身份信息从 `~/.config/git/local.conf` include |
-| `starship.nix` | starship 提示符 + `modules/home/starship.toml`；`configPath` 必须与文件落点一致（见第 8 节第 2 条） |
+| `starship.nix` | starship 提示符 + `dotfiles/starship/starship.toml`（**必须可写**：noctalia 的 starship 模板会改写它，所以是 out-of-store 软链）；`configPath` 必须与文件落点一致（见第 8 节第 2 条） |
 | `nvim.nix` | EDITOR/VISUAL=nvim、`vi`/`vim` 别名、编译依赖；`~/.config/nvim` 软链到仓库 |
 | `ghostty.nix` | ghostty（nixpkgs 稳定版）+ zsh 集成；只把 `config` 软链到仓库（nightly 试过，见第 8 节第 6 条） |
 | `foot.nix` | 装 `foot` / `footclient`，整个 `dotfiles/foot` 目录 out-of-store 软链到 `~/.config/foot`；server 由 niri 启动项拉起（见第 8 节第 13 条） |
@@ -115,12 +115,12 @@ nixfmt <file.nix>
 | `fontconfig/fonts.conf` | `xdg.configFile` 普通 source，落点 `~/.config/fontconfig/fonts.conf` | 是 |
 | `noctalia/config.toml` | `programs.noctalia.settings` 指向仓库文件，构建期先 `noctalia config validate` 再软链 | 是 |
 | `tmux` | 构建期 `builtins.readFile` 读进配置 | 是 |
-| `starship.toml` | 仓库内文件链接 | 是 |
+| `starship.toml` | `mkOutOfStoreSymlink` 指向 `dotfiles/starship/starship.toml`：**必须可写**，noctalia 的 starship 模板会写穿这条软链 | 否，保存即生效（换主题会被 noctalia 重写，见下） |
 | `rime` | 自定义 activation 拷贝（见第 6 节） | 是 |
 
 `mkOutOfStoreSymlink` 把**绝对路径**写死成 `${config.home.homeDirectory}/nix-config/dotfiles/...`，
 所以仓库必须留在 `~/nix-config`；换目录要同步改 `modules/home/` 下的 `nvim.nix`、`ghostty.nix`、
-`foot.nix`、`mpv.nix`、`niri.nix`、`yazi.nix`、`umbriel.nix`。
+`foot.nix`、`mpv.nix`、`niri.nix`、`yazi.nix`、`umbriel.nix`、`starship.nix`。
 
 目录级 out-of-store 软链（`~/.config/<app>` 整体指向仓库目录）除了"改完不用 rebuild"，还有一个硬需求：
 **noctalia 的主题模板要往这些目录里写文件**（niri 的 `noctalia.kdl` 与 `config.kdl` 里的 include 行、
@@ -156,6 +156,10 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
   noctalia 主题**，否则 niri / foot 报 include 缺失、umbriel 直接起不来、yazi 掉回默认主题。
 - 只影响运行时渲染、不影响 flake 求值：flake 源码本来就不含未跟踪/被忽略的文件，而运行时读的是
   out-of-store 软链指向的工作区。
+- **例外：`dotfiles/starship/starship.toml` 照旧跟踪**。starship 没有 include 机制，noctalia 只能把
+  调色板**内联**写进这个文件（重写 `palette = ...` 那行 + 末尾追加一段带 marker 的块，其余内容保留），
+  而它同时又是手写配置、且必须存在（少了它提示符就没配置了），所以不能忽略 —— 换主题后它会变脏，
+  看 diff 再决定提交。它的写入口是 `~/.config/starship.toml` 这条 out-of-store 软链。
 
 ## 6. Rime 特例（不要"顺手优化"掉）
 
@@ -191,7 +195,8 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
    `dotfiles/nvim/lua/plugins/dbs_url/`（数据库明文）。`.gitignore` 已覆盖这些，新增同类文件时同步补规则。
 2. `modules/home/starship.nix` 的 `configPath` 必须和 `xdg.configFile."starship.toml"` 的落点**完全一致**：
    指到不存在的路径时 starship 会**静默**回退到内置默认配置（自定义 toml 被整个忽略，看着就像"配置没生效"）。
-   现在两边都是 `~/.config/starship.toml`，挪文件要一起改。
+   现在两边都是 `~/.config/starship.toml`，而它是指向 `dotfiles/starship/starship.toml` 的 out-of-store
+   软链（noctalia 的 starship 模板要写穿它），挪文件或改链要一起改。
 3. 只有单 host / 单 user：新增主机要改 `flake.nix` 的 outputs，并考虑把 `username`、`system` 参数化。
 4. 桌面启动项（`dotfiles/niri/startup.kdl`）里有 `ydotoold`、`polkit-gnome` 等，
    它们并不都由这份 flake 安装 —— 排查"命令找不到"时先确认是 Nix 装的还是手工装的
@@ -258,7 +263,9 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       `builtin_ids = [ … "umbriel" ]` + `community_ids = [ "telegram", "yazi" ]`），仓库那份
       `dotfiles/noctalia/config.toml` 里的列表只是低优先级默认值。判断"某个模板会不会跑、会写哪些文件"，
       要去看 state 文件 + `~/.local/state/noctalia/community-templates/`；
-    - 模板的渲染产物**不入库**（`.gitignore` 按路径忽略，清单见第 5 节）；
+    - 模板的渲染产物**不入库**（`.gitignore` 按路径忽略，清单见第 5 节）；唯一例外是 starship：
+      它没有 include，调色板只能内联进手写配置 `dotfiles/starship/starship.toml`，所以那个文件照旧跟踪
+      （被 out-of-store 软链到 `~/.config/starship.toml`，apply 时写穿它，见第 5 节）；
     - 系统 nixpkgs 26.05 里虽然有 `pkgs.noctalia`，但版本比上游 flake 旧、也没有模块，不要混用。
 15. umbriel 是 noctalia 官方的 wlroots 合成器，**只是会话选择器里的可选测试会话**（greetd 的
     `session.default` 仍是 `niri`）。要点：
@@ -285,5 +292,5 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
 2. **加包**：优先用 `programs.*` 模块；没有再退到 `home.packages` / `environment.systemPackages`（用 `with pkgs;`）。
 3. **新模块**：写文件后必须在 `home/keith/default.nix` 或 `hosts/nixos-adol/default.nix` 的 `imports` 里注册 —— Nix 不会自动发现。
 4. **风格**：2 空格缩进、nixfmt-rfc-style；函数头写成 `{ pkgs, ... }:`，空一行再写 `{`；注释用中文，解释「为什么」而不是「做了什么」。
-5. **验证**：先 `nix eval ...toplevel.drvPath`；再按需 `nixos-rebuild build` / `switch`。走 store 软链或构建期读取的改动（`tmux`、`rime`、`starship`、`noctalia`、`fontconfig`）**必须** rebuild 才生效；`nvim` / `ghostty` / `foot` / `mpv` / `niri` / `yazi` / `umbriel` 是 out-of-store 软链，保存即生效（见第 5 节表）。
+5. **验证**：先 `nix eval ...toplevel.drvPath`；再按需 `nixos-rebuild build` / `switch`。走 store 软链或构建期读取的改动（`tmux`、`rime`、`noctalia`、`fontconfig`）**必须** rebuild 才生效；`nvim` / `ghostty` / `foot` / `mpv` / `niri` / `yazi` / `umbriel` / `starship` 是 out-of-store 软链，保存即生效（见第 5 节表）。
 6. **提交**：仓库历史是简短自由格式、无 CI。一次提交只做一件事，别把 `flake.lock` 的大范围更新和功能改动混在一起。

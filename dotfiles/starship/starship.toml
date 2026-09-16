@@ -1,3 +1,13 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ⚠ 这个文件的一半归 noctalia 管：它的 starship 模板（state 层 builtin_ids 里的 "starship"）
+#   换主题时会重写 `palette = ...` 那一行，并在文件末尾追加一段
+#   `# >>> NOCTALIA STARSHIP PALETTE >>>` … `# <<< NOCTALIA STARSHIP PALETTE <<<`。
+#   apply.sh 只动这两处、其余内容原样保留，所以换主题后本文件会变脏（看 diff 再决定提交）。
+#   这也是 ~/.config/starship.toml 用 out-of-store 软链的原因（modules/home/starship.nix）——
+#   指向只读的 store 软链会让那次写入报"只读文件系统"。
+#   下面那份手写的 [palettes.catppuccin_mocha] 是模板关掉时的备用调色板，被 noctalia
+#   接管后 `palette` 会指向 "noctalia"，它就成了死代码，留着不影响。
+# ─────────────────────────────────────────────────────────────────────────────
 # Don't print a new line at the start of the prompt
 add_newline = true
 # Pipes ╰─ ╭─
