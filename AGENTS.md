@@ -63,7 +63,7 @@ nixfmt <file.nix>
 
 | 文件 | 作用 |
 | --- | --- |
-| `base.nix` | networkmanager、时区、flakes 实验特性、zram、git/neovim、`allowUnfreePredicate`(google-chrome / obsidian)；Cachix substituter（noctalia） |
+| `base.nix` | networkmanager、时区、flakes 实验特性、zram + `vm.swappiness`（唯一 swap，见第 8 节第 18 条）、git/neovim、`allowUnfreePredicate`(google-chrome / obsidian)；Cachix substituter（noctalia） |
 | `ssh.nix` | openssh：密码登录开，root 登录关 |
 | `shell.nix` | 系统层启用 zsh，并把普通用户 shell 设为 zsh（不影响 root） |
 | `fonts.nix` | 字体包都在这：maple-mono.NF-CN（拉丁/终端）、lxgw-wenkai（中文）、nerd-fonts.jetbrains-mono、nerd-fonts.symbols-only。fonts.conf 里点名的 family 必须能在这些包里找到（见第 8 节第 11 条） |
@@ -315,6 +315,25 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       Rust(Tauri) + pnpm 前端构建，unstable channel 未必构建它，首次 switch 可能本地编译十几分钟；
     - unstable 的 pin 只在 `nix flake update`（不带参数）时移动，`nix flake update nixpkgs`
       不会碰它 —— 想控节奏就手动 `nix flake update nixpkgs-unstable`。
+18. 系统里**唯一的 swap 是 zram，磁盘上没有 swap** —— 这是刻意的，不是当年装系统时漏配：
+    - 证据：`hardware-configuration.nix` 的 `swapDevices = [ ]`、`/etc/fstab` 无 swap 行、
+      `lsblk` 里没有任何 swap 分区，而 `swapon --show` 只有 `/dev/zram0`。**看到 `free` 里有 15Gi
+      交换属预期现象，别当成配置泄漏、更别去"补上忘设的 swap"去动分区**；
+    - 来源是 `modules/nixos/base.nix` 的 `zramSwap.enable = true`，生成
+      `/etc/systemd/zram-generator.conf`（`zram-size = 50 / 100 * ram`、zstd、`swap-priority = 5`），
+      30Gi 内存 → 15.3Gi 虚拟 swap。它**不预留内存**（空闲约 20KB 内核内存，实测压测 1.2G 峰值也只
+      多占 ~10MB），真实容量受物理内存限制（zstd 对匿名页一般 2.5~3.5:1，全填满约吃 5Gi）——
+      所以它是"吸收内存尖峰、推迟 OOM"的保险，**不是**额外内存。本地编译（umbriel / clash-verge
+      首次 switch 的 rustc/gcc）和 Chrome / Zen / Electron 的峰值正是靠它兜住；
+    - `boot.kernel.sysctl."vm.swappiness" = 100`：zram 上压缩一页比丢一页 page cache 划算，
+      默认的 60 会让内核倾向丢文件缓存而不去压冷匿名页，等于把 zram 闲置着；
+    - **代价：不能休眠**（`/sys/power/state` 里有 `disk`，但 cmdline 无 `resume=`、也没有持久化
+      swap 后端）。要休眠得在 btrfs root 上开 ~32Gi swapfile（必须 `chattr +C` 关 COW）或加分区；
+      本机是双系统（350G NTFS + 600G btrfs root）没有空闲空间，而且
+      `dotfiles/niri/scripts/swayidle.sh` 里连自动挂起都是注释掉的（用 `s2idle`），所以这个代价
+      目前是 0 —— 想恢复休眠再评估，别为它拆分区；
+    - 排查手法：`zramctl` / `cat /proc/swaps` 看用量，`cat /proc/pressure/memory` 看真实内存压力，
+      `grep pswp /proc/vmstat` 看有没有真发生过换入换出（本机 1 天多 uptime 里是 0）。
 
 ## 9. 改动流程（checklist）
 
