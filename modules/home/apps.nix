@@ -7,6 +7,10 @@
     # Electron 应用。niri 会话里已经有 NIXOS_OZONE_WL=1 和
     # ELECTRON_OZONE_PLATFORM_HINT=auto（modules/nixos/niri.nix），所以不用再包一层 wrapper。
     obsidian
+    feishu
+
+    # Emacs 同时提供 emacsclient，供 niri 的编辑器快捷键调用。
+    emacs
 
     # Flutter/GTK 写的，原生 Wayland，不需要额外包装参数；可执行文件名是 localsend_app。
     # 局域网收文件要在 base.nix 放行 53317（TCP+UDP），否则只能发不能收。

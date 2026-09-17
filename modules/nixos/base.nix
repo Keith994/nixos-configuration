@@ -34,5 +34,6 @@
     builtins.elem (lib.getName pkg) [
       "google-chrome"
       "obsidian"
+      "feishu"
     ];
 }

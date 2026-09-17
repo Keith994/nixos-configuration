@@ -17,6 +17,7 @@
       ../../modules/nixos/greetd.nix
       ../../modules/nixos/fcitx5.nix
       ../../modules/nixos/clash-verge.nix
+      ../../modules/nixos/docker.nix
     ];
 
   # UEFI
@@ -32,6 +33,7 @@
     extraGroups = [
       "wheel"
       "networkmanager"
+      "docker"
     ];
   };
 
