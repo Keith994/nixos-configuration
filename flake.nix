@@ -4,6 +4,13 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
+    # 只为**一个包**引入 unstable：clash-verge-rev（26.05 = 2.4.7，unstable = 2.5.2）。
+    # 刻意 **不加** inputs.nixpkgs.follows —— 加了就等于又换回 26.05 的包，等于没换。
+    # 也刻意不把它用在系统上：outputs 里只 import 出一个独立实例 pkgsUnstable，
+    # 取到的包自带它那份 GTK/WebKit 闭包，与系统 pkgs 并存，不会牵动全系统重新求值/重建。
+    # 用 nixos-unstable 而不是 nixpkgs-unstable：这里只要包，不需要 NixOS 模块的测试集。
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+
     home-manager = {
       url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -56,6 +63,11 @@
     let
       system = "x86_64-linux";
       username = "keith";
+
+      # 独立于系统 nixpkgs 的实例，目前只服务 clash-verge 一个包
+      # （modules/nixos/clash-verge.nix）。用默认 config：那个包是 gpl3Only、不涉及 unfree；
+      # 将来若真有 unfree 的依赖进来，构建会直接报错，而不是被系统那份白名单悄悄放行。
+      pkgsUnstable = import inputs.nixpkgs-unstable { inherit system; };
     in
     {
       nixosConfigurations.nixos-adol =
@@ -63,7 +75,7 @@
           inherit system;
 
           specialArgs = {
-            inherit inputs username;
+            inherit inputs username pkgsUnstable;
           };
 
           modules = [

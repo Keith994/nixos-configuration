@@ -12,7 +12,7 @@
 | 主机 | `nixos-adol`（`networking.hostName = "adol"`） |
 | 用户 | `keith`（属组 `wheel`、`networkmanager`） |
 | 系统 / stateVersion | `26.05` |
-| 输入 | `nixpkgs` → `nixos-26.05`；`home-manager` → `release-26.05`（follows nixpkgs）；`noctalia` → `github:noctalia-dev/noctalia/cachix`（**不** follows，见第 8 节第 14 条）；`zen-browser` → `github:0xc000022070/zen-browser-flake`（两个 follows 都加，见第 8 节第 12 条）；`umbriel` → `git+https://github.com/noctalia-dev/umbriel`（**不** follows，见第 8 节第 15 条） |
+| 输入 | `nixpkgs` → `nixos-26.05`；`home-manager` → `release-26.05`（follows nixpkgs）；`noctalia` → `github:noctalia-dev/noctalia/cachix`（**不** follows，见第 8 节第 14 条）；`zen-browser` → `github:0xc000022070/zen-browser-flake`（两个 follows 都加，见第 8 节第 12 条）；`umbriel` → `git+https://github.com/noctalia-dev/umbriel`（**不** follows，见第 8 节第 15 条）；`nixpkgs-unstable` → `nixos-unstable`（**不** follows，只给 clash-verge 一个包用，见第 8 节第 17 条） |
 | 时区 / 桌面 | `Asia/Shanghai` / niri + Noctalia(v5) + noctalia-greeter 登录器；会话选择器里另有 Umbriel（可选测试会话，默认会话仍是 niri，见第 8 节第 15 条） |
 | 上游远端 | `git@github.com:Keith994/nixos-configuration.git`（本地目录名是 `~/nix-config`） |
 
@@ -73,7 +73,7 @@ nixfmt <file.nix>
 | `umbriel.nix` | `inputs.umbriel` 的 `programs.umbriel`：装包 + 注册一个 `Name=Umbriel` 的 wayland 会话 + portal（纯增量，默认会话仍是 niri，见第 8 节第 15 条） |
 | `noctalia.nix` | noctalia shell 需要的系统服务：蓝牙、upower、power-profiles-daemon（wifi 在 base.nix） |
 | `greetd.nix` | noctalia-greeter：greetd + `greeter.toml`（tmpfiles）+ AccountsService/polkit（见第 8 节第 8 条） |
-| `clash-verge.nix` | `programs.clash-verge`（serviceMode + `clash-verge` 组）；GUI 由 `dotfiles/niri/startup.kdl` 拉起，不用模块的 autoStart |
+| `clash-verge.nix` | `programs.clash-verge`（serviceMode + `clash-verge` 组）；GUI 由 `dotfiles/niri/startup.kdl` 拉起，不用模块的 autoStart；**包**取自 `nixpkgs-unstable`（模块仍是 26.05 的，见第 8 节第 17 条） |
 | `fcitx5.nix` | fcitx5 + `waylandFrontend`，rime 引擎用 rime-ice |
 | `vmware.nix` | VMware guest 支持 —— **当前没有被任何 host import**，需要时自行加进 `hosts/nixos-adol/default.nix` |
 
@@ -299,6 +299,22 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
     不设 `XCURSOR_THEME` 时 xcursor 会去找名为 `default` 的主题（本机没有），于是合成器自己画的
     边缘拖拽/移动光标、以及 Qt / XWayland / Electron 各自回退到内置箭头，看着就是"光标混用"。
     `[environment]` / niri 的 `environment {}` **只在会话启动时生效**，改完要重开会话。
+17. clash-verge 的**包**来自 unstable、**模块**仍是 26.05 的 —— 这是"单个包吃 unstable"的标准姿势：
+    - `flake.nix` 里有第二个 nixpkgs input `nixpkgs-unstable`（`nixos-unstable`），**不加** follows，
+      只 `import` 成一个独立实例 `pkgsUnstable`、经 `specialArgs` 传给系统模块。**不要**把它接到
+      `nixpkgs.overlays`（会静默替换全仓库对该包的引用）、也不要顺着它把系统迁到 unstable；
+    - `modules/nixos/clash-verge.nix` 只覆盖 `programs.clash-verge.package`（26.05 = 2.4.7，
+      unstable = 2.5.2；`gpl3Only`，所以 `pkgsUnstable` 用默认 config 即可，不涉及 unfree 白名单）；
+    - 模块级差异只有两处：unstable 的模块给服务加了 `StateDirectory = "clash-verge-service"`
+      （本仓库在 `clash-verge.nix` 里用 `lib.mkIf` 自己补上了，否则 `ProtectSystem = "strict"` 下
+      新版服务端写 `/var` 会失败），以及 tunMode 的 `checkReversePath` 断言 / 默认值
+      （本仓库不用 tunMode，无影响）。IPC socket 路径两版一致
+      （`/run/clash-verge-rev/service.sock`，走模块已有的 `RuntimeDirectory`），所以 GUI 与 service
+      不会跨版本错配 —— 两者都来自 `pkgsUnstable.clash-verge-rev` 同一个包；
+    - 代价：store 里多一份 GTK/WebKit 闭包（挂 GC root，不会自动清）；`clash-verge-rev` 是
+      Rust(Tauri) + pnpm 前端构建，unstable channel 未必构建它，首次 switch 可能本地编译十几分钟；
+    - unstable 的 pin 只在 `nix flake update`（不带参数）时移动，`nix flake update nixpkgs`
+      不会碰它 —— 想控节奏就手动 `nix flake update nixpkgs-unstable`。
 
 ## 9. 改动流程（checklist）
 

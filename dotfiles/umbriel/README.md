@@ -87,10 +87,6 @@ out-of-store 软链，见第 5 节），不用 rebuild、也不用重开会话�
 3. **工作区模型不同**：
    - niri：`rules.kdl` 里 `workspace "1"/"2"/"3"` 是**永远存在**的命名工作区（钉在 eDP-1），
      其余按索引动态创建 —— 所以 `Mod+4` / `Mod+5` 在内屏也能用（创建出来的 4/5 号）。
-   - umbriel：每个 output 要么是动态清单，要么是**精确**的静态名字清单。这里 eDP-1 用了
-     `workspaces = [ "1", "2", "3" ]`，于是**内屏上 `Mod+4`/`Mod+5` 会报"没有这个工作区"**
-     （等于没反应，无害）；HDMI-A-1 没写 `workspaces`，仍是动态，`Mod+4/5` 在外屏正常。
-     想补齐就把 `"4", "5"` 加进 `outputs.toml` 的 eDP-1 清单。
    - 窗口规则里的 `default_workspace = "2"` / `"3"` 匹配的是**名字**，不受影响。
 4. **窗口规则的匹配语义**：umbriel 一条规则里 `match.app_id` 和 `match.title` 之间是 **AND**，
    而 niri 的多个 `match` 行是 **OR**。所以 niri 里"一个规则堆 4 个 matcher"必须拆成多条规则

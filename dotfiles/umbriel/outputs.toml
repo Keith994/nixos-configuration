@@ -1,32 +1,8 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# 显示器 —— 对应 dotfiles/niri/monitors.kdl
-#
-# 段名是连接器名（HDMI-A-1 / eDP-1）。跑起来之后用 `umbriel outputs` 核对；
-# 想跟"显示器"而不是"接口"绑定时，可以换成它打印的 Config name（"Make Model Serial"），
-# 那样同一块屏换到别的接口也还认。
-#
-# 输出配置支持热重载：改完这个文件不用重开 umbriel 会话。
-# ─────────────────────────────────────────────────────────────────────────────
-
-[output.HDMI-A-1]
-# niri: mode "2560x1440@144.000" / scale 1 / transform "normal" / position x=0 y=0
-mode = "2560x1440@144"
-scale = 1
-transform = "normal"
-position = [ 0, 0 ]
-# niri 的 variable-refresh-rate 是注释掉的，这里也保持默认 vrr = "disabled"
-
 [output.eDP-1]
 # niri: mode "2880x1800@120.000" / scale 1.6 / transform "normal"
 # （niri 那边 position 是注释掉的 = 自动排布，这里同样不写 position）
 mode = "2880x1800@120"
 scale = 1.6
 transform = "normal"
-
-# niri 的 rules.kdl 把 "1" "2" "3" 三个命名工作区钉在 eDP-1 上（其余按需动态出现）。
-# umbriel 的名字清单是**精确**的：列在这里才有。所以：
-# - 内屏只有 1/2/3，按 Mod+4 / Mod+5 会得到一个"没有这个工作区"的错误（无害，就是没反应）；
-#   想补齐就把 "4", "5" 加进这个数组。
-# - HDMI-A-1 没写 workspaces，保持动态，Mod+4/5 在外屏上照常可用。
-# 另外 window rule 里的 default_workspace = "2" / "3" 匹配的是**名字**，不是位置，不受影响。
 workspaces = [ "1", "2", "3" ]

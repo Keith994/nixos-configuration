@@ -152,7 +152,7 @@ follows_mouse = false
 # ── 布局 ─────────────────────────────────────────────────────────────────────
 [layout]
 # niri 默认就是横向滚动的列布局
-mode = "scrolling"
+mode = "dwindle"
 # niri: gaps 0.5 —— umbriel 的 gap 是整数像素，四舍五入成 1
 gap = 1
 # niri: preset-column-widths { proportion 0.5; proportion 1.0; }
@@ -173,52 +173,60 @@ center_underfull_strip = false
 center_focused = "never"
 
 # ── 动画 ─────────────────────────────────────────────────────────────────────
-# niri 的 spring 直接写成 umbriel 的 "spring:<damping>,<stiffness>" 字符串。
-# spring 曲线不吃 duration_ms（和概览 filmstrip 的默认 spring 一样）。
 [animation]
 enabled = true
-duration_ms = 250
+duration_ms = 240
 curve = "easeout"
 
-# niri: window-open duration-ms 150 curve "ease-out-expo"
+# 打开：快速缩放 + 轻微回弹
 [animation.windows_in]
 enabled = true
-duration_ms = 150
-curve = "easeout"
+duration_ms = 500
+curve = "spring:0.82,600"
 style = "popin"
+scale = 0.88
+shader = "shaders/squash.glsl"      # Replaces the built-in opening style
 
-# niri: window-close duration-ms 150 curve "ease-out-quad"
+# 关闭：不要回弹，干净快速消失
 [animation.windows_out]
 enabled = true
 duration_ms = 150
 curve = "easeout"
 style = "fade"
+shader = "shaders/reveal.glsl"      # Replaces the built-in opening style
 
-# niri: window-movement / window-resize spring damping-ratio=1.0 stiffness=800
+# 移动 / resize：保留物理感，并由 squash shader 增加轻微形变
 [animation.windows_move]
 enabled = true
-curve = "spring:1,800"
+duration_ms = 150
+curve = "spring:0.88,700"
+shader = "shaders/squash.glsl"
 
-# niri: workspace-switch spring damping-ratio=1.0 stiffness=1000
-# （这个值正好是 umbriel 概览 filmstrip 的默认 spring）
+# Workspace：比原来的 1,1000 稍微软，仍然足够跟手
 [animation.workspaces]
 enabled = true
-curve = "spring:1,1000"
+curve = "spring:0.92,800"
 
-# niri: overview-open-close spring damping-ratio=1.0 stiffness=800
+# Overview
 [animation.overview]
 enabled = true
+duration_ms = 220
 curve = "easeout"
-duration_ms = 250
-workspace_curve = "spring:1,800"
+workspace_curve = "spring:0.88,700"
 
-# niri 没有 scratchpad；umbriel 的这个默认是关的，留着是因为要用得先定义 [[scratchpad]]。
+# 焦点变化时 border 平滑过渡
+[animation.border]
+enabled = true
+duration_ms = 160
+curve = "easeout"
+
 [animation.scratchpad]
 enabled = false
 
 # ── 热区 ─────────────────────────────────────────────────────────────────────
 # niri: gestures { hot-corners { off } }
 # umbriel 打包的示例配置默认开了左上角，这里显式四个全关，和 niri 的观感一致。
+#
 [hot_corners.top_left]
 enabled = false
 
