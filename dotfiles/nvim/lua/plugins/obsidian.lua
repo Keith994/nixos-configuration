@@ -14,7 +14,7 @@ return {
       ui = { enable = false },
       workspaces = {
         {
-          path = vim.env.HOME .. "/obsidian-notes", -- specify the vault location. no need to call 'vim.fn.expand' here
+          path = vim.env.HOME .. "/10-notes/obsidian-notes", -- specify the vault location. no need to call 'vim.fn.expand' here
         },
       },
       open = {

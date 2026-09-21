@@ -90,6 +90,7 @@
 "Mod+3" = "workspace-switch:3"
 "Mod+4" = "workspace-switch:4"
 "Mod+5" = "workspace-switch:5"
+"Mod+6" = "workspace-switch:6"
 # niri: Mod+WheelScrollDown/Up cooldown-ms=150 { focus-workspace-down/up; }
 "Mod+WheelDown" = { action = "workspace-next", cooldown_ms = 150 }
 "Mod+WheelUp" = { action = "workspace-previous", cooldown_ms = 150 }

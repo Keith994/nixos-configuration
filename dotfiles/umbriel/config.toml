@@ -90,7 +90,7 @@ prefer_no_csd = true
 border_width = 2
 outer_border_width = 0
 # niri noctalia.kdl: window-rule geometry-corner-radius 12
-corner_radius = 12
+corner_radius = 20
 drag_opacity = 0.75
 
 # niri rules.kdl: 所有窗口 background-effect { blur true }
