@@ -12,13 +12,13 @@
 # noctalia.toml 放最后一个：它是 noctalia 主题模板渲染出来的调色板，要能压过这里的一切颜色。
 # 注意（别手改这一行）：noctalia 的 templates/umbriel/apply.sh 会重排这一行并保证
 # "noctalia.toml" 在最后，格式也可能被它改写成自己的风格，属于预期行为。
-files = [ "outputs.toml", "keybinds.toml", "rules.toml", "noctalia.toml"]
+files = [ "outputs.toml", "keybinds.toml", "rules.toml"]
 
 [include.optional]
 # 和 niri 的 machine-custom.kdl 同一个用途：机器特有、不进版本库的覆盖。
 # 可选 include 缺文件会被静默忽略（niri 那边缺 machine-custom.kdl 反而会报错，
 # 见仓库 AGENTS.md 第 8 节第 7 条）。
-files = [ "machine-custom.toml" ]
+files = [ "machine-custom.toml", "noctalia.toml"]
 
 # ── 常规 ─────────────────────────────────────────────────────────────────────
 [general]
@@ -152,12 +152,13 @@ follows_mouse = false
 # ── 布局 ─────────────────────────────────────────────────────────────────────
 [layout]
 # niri 默认就是横向滚动的列布局
-mode = "dwindle"
+mode = "scrolling"
 # niri: gaps 0.5 —— umbriel 的 gap 是整数像素，四舍五入成 1
 gap = 1
 # niri: preset-column-widths { proportion 0.5; proportion 1.0; }
-# 注意 umbriel 的宽/高循环共用这一个列表，niri 单独给的 preset-window-heights 没地方放
-width_presets = [ 0.5, 1.0 ]
+# 注意 umbriel 的 primary/secondary extent 循环共用这一个列表，
+# niri 单独给的 preset-window-heights 没地方放
+extent_presets = [ 0.5, 1.0 ]
 
 [layout.struts]
 # niri: struts { left 1; right 1; top 1; bottom 1; }
@@ -167,7 +168,7 @@ top = 1
 bottom = 1
 
 [layout.scrolling]
-default_width_fraction = 0.5
+default_extent_fraction = 0.5
 # niri 没有 always-center-single-column，且 center-focused-column 是 "never"
 center_underfull_strip = false
 center_focused = "never"
@@ -181,11 +182,11 @@ curve = "easeout"
 # 打开：快速缩放 + 轻微回弹
 [animation.windows_in]
 enabled = true
-duration_ms = 500
+duration_ms = 300
 curve = "spring:0.82,600"
 style = "popin"
 scale = 0.88
-shader = "shaders/squash.glsl"      # Replaces the built-in opening style
+# shader = "shaders/squash.glsl"      # Replaces the built-in opening style
 
 # 关闭：不要回弹，干净快速消失
 [animation.windows_out]
@@ -193,14 +194,14 @@ enabled = true
 duration_ms = 150
 curve = "easeout"
 style = "fade"
-shader = "shaders/reveal.glsl"      # Replaces the built-in opening style
+# shader = "shaders/reveal.glsl"      # Replaces the built-in opening style
 
 # 移动 / resize：保留物理感，并由 squash shader 增加轻微形变
 [animation.windows_move]
 enabled = true
 duration_ms = 150
 curve = "spring:0.88,700"
-shader = "shaders/squash.glsl"
+# shader = "shaders/squash.glsl"
 
 # Workspace：比原来的 1,1000 稍微软，仍然足够跟手
 [animation.workspaces]

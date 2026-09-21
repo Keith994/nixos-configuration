@@ -25,28 +25,28 @@ opacity = 0.80
 # niri rules.kdl: 终端默认列宽 0.555（niri 里是一个规则里 4 个 app-id = OR）
 [[window_rule]]
 match.app_id = "^org\\.wezfurlong\\.wezterm$"
-default_width = 0.555
+default_scrolling_extent = 0.555
 
 [[window_rule]]
 match.app_id = "^Alacritty$"
-default_width = 0.555
+default_scrolling_extent = 0.555
 
 [[window_rule]]
 match.app_id = "^com\\.mitchellh\\.ghostty$"
-default_width = 0.555
+default_scrolling_extent = 0.555
 
 [[window_rule]]
 match.app_id = "^kitty$"
-default_width = 0.555
+default_scrolling_extent = 0.555
 
 # niri rules.kdl: chatbox / obsidian 列宽 0.50
 [[window_rule]]
 match.app_id = "^xyz\\.chatboxapp\\.app$"
-default_width = 0.50
+default_scrolling_extent = 0.50
 
 [[window_rule]]
 match.app_id = "^obsidian$"
-default_width = 0.50
+default_scrolling_extent = 0.50
 
 # niri rules.kdl: fcitx5 / firefox(我的足迹) / firefox(画中画) / xarchiver / firefox(PiP) 开浮动
 # 带 title 的那几条在 niri 里本身就是"app-id AND title"，这里保持 AND。
@@ -97,8 +97,7 @@ default_maximize = true
 match.app_id = "^dropdown$"
 default_floating = true
 default_position = { x = 0, y = 0, anchor = "top" }
-default_width = 0.93
-default_height = 0.55
+default_floating_size = { width = 0.93, height = 0.55 }
 
 # niri rules.kdl: 致景科技会议 / Meeting 浮在左上角且不抢焦点（OR，拆两条）
 [[window_rule]]
@@ -122,40 +121,35 @@ default_focused = false
 [[window_rule]]
 match.app_id = "^terminal_app$"
 default_floating = true
-default_width = 0.93
-default_height = 0.93
+default_floating_size = { width = 0.93, height = 0.93 }
 
 [[window_rule]]
 match.app_id = "^btop_terminal$"
 default_floating = true
-default_width = 0.93
-default_height = 0.93
+default_floating_size = { width = 0.93, height = 0.93 }
 
 [[window_rule]]
 match.app_id = "^yazi_terminal$"
 default_floating = true
-default_width = 0.93
-default_height = 0.93
+default_floating_size = { width = 0.93, height = 0.93 }
 
 # niri rules.kdl: imv / satty 浮动 0.8
 [[window_rule]]
 match.app_id = "^imv$"
 default_floating = true
-default_width = 0.8
-default_height = 0.8
+default_floating_size = { width = 0.8, height = 0.8 }
 
 [[window_rule]]
 match.app_id = "^com\\.gabm\\.satty$"
 default_floating = true
-default_width = 0.8
-default_height = 0.8
+default_floating_size = { width = 0.8, height = 0.8 }
 
 # niri noctalia.kdl: noctalia 设置窗口浮动，固定 1080x920
 # （niri 那条还顺手设了 geometry-corner-radius 12，umbriel 只能全局设 —— 见 config.toml 的 appearance.corner_radius）
 [[window_rule]]
 match.app_id = "^dev\\.noctalia\\.Noctalia$"
 default_floating = true
-default_size = [ 1080, 920 ]
+default_floating_size_px = { width = 1080, height = 920 }
 
 # ── 图层规则（layer rule）────────────────────────────────────────────────────
 # niri noctalia.kdl: noctalia 的 bar / 通知 / dock / 面板 / OSD 自己上报模糊区域，

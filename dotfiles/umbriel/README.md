@@ -104,8 +104,8 @@ out-of-store 软链，见第 5 节），不用 rebuild、也不用重开会话�
 | niri | umbriel 这里的写法 | 差异 |
 | --- | --- | --- |
 | `gaps 0.5` | `layout.gap = 1` | umbriel 的 gap 是整数像素，四舍五入 |
-| `preset-window-heights { 0.333/0.5/1.0 }` | 无 | `width_presets` 宽/高**共用**一个列表，没法单独给高度预设 |
-| `switch-preset-column-width` | `window-cycle-width` | 等价（都走 `width_presets`，现在是 0.5/1.0） |
+| `preset-window-heights { 0.333/0.5/1.0 }` | 无 | `extent_presets` 宽/高**共用**一个列表，没法单独给高度预设 |
+| `switch-preset-column-width` | `window-cycle-primary-extent` | 等价（都走 `extent_presets`，现在是 0.5/1.0） |
 | `accel-speed 0.2` | `input.touchpad.sensitivity = 0.2` | 近似映射，手感自己再调 |
 | `scroll-method "two-finger"` | 无 | 用 libinput 默认值 |
 | `warp-mouse-to-focus` | `input.cursor.follows_focus = true` | umbriel 在跨输出移动/激活时也会 warp，范围略大 |
@@ -252,6 +252,25 @@ community_ids = [ "telegram", "yazi" ]
 
 - 上游是活跃开发中的项目，**键名会变**。改完先 `umbriel validate -c ~/.config/umbriel/config.toml`，
   它在不跑合成器的情况下就能报错（错误面板也会在会话里显示，最多列 6 条）。
+- **上游把「宽 / 高」这一套词换成了「extent」（primary / secondary）**，旧名字全部变成
+  `unknown key` / `unknown action`（validate 会打一堆 warning 并以 exit 1 结束，但配置其实还能跑）。
+  对照表（改完现在是 0 warning）：
+
+  | 旧写法（niri 直译） | 现在的写法 |
+  | --- | --- |
+  | `layout.width_presets` | `layout.extent_presets` |
+  | `layout.scrolling.default_width_fraction` | `layout.scrolling.default_extent_fraction` |
+  | `window-cycle-width` / `window-cycle-height` | `window-cycle-primary-extent` / `window-cycle-secondary-extent` |
+  | `window-modify-width:<d>` / `window-modify-height:<d>` | `window-modify-primary-extent:<d>` / `window-modify-secondary-extent:<d>` |
+  | 平铺规则的 `default_width`（niri `default-column-width`） | `default_scrolling_extent` |
+  | 浮动规则的 `default_width` + `default_height` | `default_floating_size = { width, height }`（比例） |
+  | 固定像素尺寸的 `default_size = [ w, h ]` | `default_floating_size_px = { width, height }` |
+
+  判据的两处来源：`umbriel msg --help`（动作全表）和包里自带的参考配置
+  `/nix/store/*-umbriel-0.1.0/share/umbriel/config.toml`（它自己 validate 是 clean 的）；
+  拿不准的键名可以丢进一份临时 toml 里 `umbriel validate` 试，它会把不认识的键逐条点名。
+- 注意 `default_scrolling_extent*` 只在 **scrolling** 布局里生效，而 `[layout] mode` 现在是
+  `"dwindle"`（见第 3.2 节那张表），所以那几条终端列宽规则要 `Mod+D` 切到 scrolling 才看得到效果。
 - `dotfiles/umbriel/machine-custom.toml` 是可选的（`[include.optional]`），缺文件**不报错**；
   niri 那边缺 `machine-custom.kdl` 会报错、按 `AGENTS.md` 第 8 节第 7 条忽略即可，两件事无关。
 - `AGENTS.md` 第 5 节的"dotfiles 挂载方式"表、以及第 8 节第 15 条（umbriel 输入 / 会话注册 /

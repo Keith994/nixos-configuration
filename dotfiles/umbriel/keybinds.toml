@@ -56,14 +56,14 @@
 
 # ── 列 / 窗口尺寸 ────────────────────────────────────────────────────────────
 # niri: switch-preset-column-width / switch-preset-window-height
-"Mod+R" = "window-cycle-width"
-"Mod+Shift+R" = "window-cycle-height"
+"Mod+R" = "window-cycle-primary-extent"
+"Mod+Shift+R" = "window-cycle-secondary-extent"
 # niri: set-column-width "-10%" / "+10%"
-"Mod+Minus" = "window-modify-width:-0.1"
-"Mod+Equal" = "window-modify-width:0.1"
+"Mod+Minus" = "window-modify-primary-extent:-0.1"
+"Mod+Equal" = "window-modify-primary-extent:0.1"
 # niri: set-window-height "-10%" / "+10%"
-"Mod+Shift+Minus" = "window-modify-height:-0.1"
-"Mod+Shift+Equal" = "window-modify-height:0.1"
+"Mod+Shift+Minus" = "window-modify-secondary-extent:-0.1"
+"Mod+Shift+Equal" = "window-modify-secondary-extent:0.1"
 
 # ── 焦点移动 ─────────────────────────────────────────────────────────────────
 # niri 的 focus-column-or-monitor-* / focus-window-or-workspace-* 在 umbriel 里是
