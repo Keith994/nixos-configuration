@@ -91,7 +91,7 @@ nixfmt <file.nix>
 | `ghostty.nix` | ghostty（nixpkgs 稳定版）+ zsh 集成；整个 `dotfiles/ghostty` **目录** out-of-store 软链（config 里的相对路径 `shader/`、`themes/` 和 noctalia 写的 `themes/noctalia` 都得落在仓库里，见第 5、8 节；nightly 试过，见第 8 节第 6 条） |
 | `foot.nix` | 装 `foot` / `footclient`，整个 `dotfiles/foot` 目录 out-of-store 软链到 `~/.config/foot`；server 由 niri 启动项拉起（见第 8 节第 13 条） |
 | `tmux.nix` | tmux，配置用 `builtins.readFile ../../dotfiles/tmux/tmux.conf` |
-| `media.nix` | 看图 / 标注 / 播放一组：`pkgs.mpv.override`（挂 `mpvScripts.mpris`，让 noctalia 的媒体组件/媒体键能看到它）+ `dotfiles/mpv/{mpv.conf,input.conf}` 两个**单文件** out-of-store 软链（不整目录链：mpv 往 `~/.config/mpv/watch_later/` 写进度）；`programs.imv`（深色底 + 浮层 + vim 的 `n`/`N` 翻图。**没**配默认打开方式：`~/.config/mimeapps.list` 是仓库外的手工文件，要改直接 `xdg-mime default imv.desktop image/png`）；`programs.satty`（截图标注，只打开已有图片）+ `wl-clipboard`（satty 的 `copy-command` 要 `wl-copy`，顺便给终端用）—— `Mod+Shift+A` 走 `dotfiles/niri/scripts/satty-last.sh` 标注最新一张截图（见第 8 节第 5 条） |
+| `media.nix` | 看图 / 标注 / 播放一组：`pkgs.mpv.override`（挂 `mpvScripts.mpris`，让 noctalia 的媒体组件/媒体键能看到它）+ `dotfiles/mpv/{mpv.conf,input.conf}` 两个**单文件** out-of-store 软链（不整目录链：mpv 往 `~/.config/mpv/watch_later/` 写进度）；`programs.imv`（深色底 + 浮层 + vim 的 `n`/`N` 翻图。**没**配默认打开方式：`~/.config/mimeapps.list` 是仓库外的手工文件，要改直接 `xdg-mime default imv.desktop image/png`）；`programs.satty`（截图标注，只打开已有图片）+ `wl-clipboard`（satty 的 `copy-command` 要 `wl-copy`，顺便给终端用）—— `Mod+Shift+A` 走 `dotfiles/niri/scripts/satty-last.sh` 标注最新一张截图（见第 8 节第 5 条）；`pkgs.mpvpaper` + `pkgs.procps`（视频壁纸，手动开关，见第 8 节第 20 条） |
 | `yazi.nix` | yazi + 预览依赖；整个 `dotfiles/yazi` 目录 out-of-store 软链（`ya pack` 装的东西会直接落进仓库，见第 5 节） |
 | `niri.nix` | 整个 `dotfiles/niri` 目录 out-of-store 软链（noctalia 的 niri 模板要往这个目录写 `noctalia.kdl` 和 include 行，见第 5 节） |
 | `umbriel.nix` | `~/.config/umbriel` → `dotfiles/umbriel` 整目录 out-of-store 软链（noctalia 会写 `noctalia.toml`）；刻意不 import 上游 `homeModules.default`（见第 8 节第 15 条） |
@@ -361,6 +361,24 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
     - 排查手法：`tr '\0' '\n' < /proc/$(pgrep -f 'opt/wechat/wechat' | head -1)/environ | grep -E 'IM_MODULE|XMODIFIERS'`
       看沙箱进程真实环境；`strings <主程序> | grep PlatformInputContextPlugin` 看编进了哪些输入法插件；
       fcitx5 侧用 `busctl --user list | grep -i fcitx` 确认 `org.freedesktop.portal.Fcitx` 在。
+
+20. mpvpaper（`modules/home/media.nix`）：拿 mpv 当视频壁纸，**只装包 + 一个手动开关**，不写启动项。
+    - 包在 nixpkgs 26.05 里就有（`mpvpaper-1.8`，gpl3Only，不涉及 `allowUnfreePredicate`），自带一份 mpv；
+    - 开关是 `Mod+Shift+W` → `dotfiles/niri/scripts/mpvpaper-toggle.sh`（同一个脚本开关两用）。
+      umbriel 那侧**没**加对应键位，要用就自己往 `dotfiles/umbriel/keybinds.toml` 补
+      `"Mod+Shift+W" = "spawn:.../mpvpaper-toggle.sh"`（脚本只读环境变量，不依赖 niri）；
+    - 视频目录默认 `~/Videos/wallpapers`（`MPVPAPER_DIR` 覆盖），**刻意不放在 `~/Pictures/Wallpapers`**：
+      那是 noctalia 壁纸面板的图片目录，混进视频会多出一堆打不开的条目。目录不存在 / 里面没有视频时
+      脚本只弹一条通知就退出；输出默认 `ALL`（`MPVPAPER_OUTPUT=DP-1` 可只给一个屏）；
+    - **为什么不放 `spawn-at-startup`**：mpvpaper 画在 layer-shell 的 `background` 层，noctalia 的静态
+      壁纸也在那一层，两边同时画谁在上取决于层序 —— 属于"看运气"，所以它只当手动工具用
+      （和 satty 一样：装了、有键位、不自动跑）；
+    - 关掉靠 `pgrep -x mpvpaper` / `pkill -x mpvpaper`（`-f` 之后它自己 daemon 化、**没有** pidfile 可写），
+      所以 `media.nix` 里顺带显式装了 `pkgs.procps`，别依赖系统闭包里碰巧有 pgrep；
+    - 实际命令是 `mpvpaper -f -p -o "no-audio loop hwdec=auto" ALL <video>`。`-p` 只在"壁纸被全屏窗口
+      盖住"时暂停（man 里自称是 hack，各合成器表现不一），更可靠的用法是 `~/.config/mpvpaper/pauselist`
+      / `stoplist`（写程序名，用 `pidof` 匹配，比如 firefox/steam/obs）。另外别把选项记混：
+      `-s` 是 auto-stop、`-n SECS` 才是幻灯片模式。
 
 ## 9. 改动流程（checklist）
 

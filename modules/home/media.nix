@@ -64,14 +64,28 @@
     };
   };
 
-  # mpv 本体用 override 挂上 mpris 脚本：裸 mpv 不实现 MPRIS，挂上之后
-  # noctalia 的媒体组件（dotfiles/noctalia/config.toml 里的 [widget.media]）
-  # 和键盘媒体键才能看到并控制它。yt-dlp 支持是 nixpkgs wrapper 的默认值
-  # （youtubeSupport ? true），不用显式打开。
+  # 这一组不走 programs.* 模块：mpv（要挂 mpris 脚本）、mpvpaper（视频壁纸）、
+  # procps（给 toggle 脚本用）、wl-clipboard（satty 要的 wl-copy）。
   home.packages = [
+    # mpv 本体用 override 挂上 mpris 脚本：裸 mpv 不实现 MPRIS，挂上之后
+    # noctalia 的媒体组件（dotfiles/noctalia/config.toml 里的 [widget.media]）
+    # 和键盘媒体键才能看到并控制它。yt-dlp 支持是 nixpkgs wrapper 的默认值
+    # （youtubeSupport ? true），不用显式打开。
     (pkgs.mpv.override {
       scripts = [ pkgs.mpvScripts.mpris ];
     })
+
+    # mpvpaper：拿 mpv 当视频壁纸播放器（wlroots 系合成器的 layer-shell，niri 和
+    # umbriel 都能用）。**只装包 + 一个手动开关**：Mod+Shift+W 走
+    # dotfiles/niri/scripts/mpvpaper-toggle.sh，刻意不写 spawn-at-startup ——
+    # noctalia 自己也在管壁纸，两边同时往 background 层画会互相盖
+    # （见 AGENTS.md 第 8 节第 20 条）。视频放 ~/Videos/wallpapers 里（脚本默认值，
+    # 可用 MPVPAPER_DIR 覆盖），目录空着的时候脚本只弹一条通知。
+    pkgs.mpvpaper
+
+    # toggle 脚本靠 pgrep/pkill 找正在跑的 mpvpaper（-f 之后它自己 daemon 化、
+    # 没有 pidfile）。显式装 procps，别指望系统闭包里碰巧有。
+    pkgs.procps
 
     # satty 的 copy-command 要 wl-copy，顺便也给终端里的 wl-copy / wl-paste
     # （以及别的要写剪贴板的脚本）用。
@@ -82,11 +96,9 @@
   # ~/.config/mpv/watch_later/ 下，整目录软链的话这些状态文件会掉进仓库里。
   # 单文件 out-of-store 软链改完存盘即生效，不用 rebuild（和 ghostty 的 config 一样）。
   xdg.configFile."mpv/mpv.conf".source =
-    config.lib.file.mkOutOfStoreSymlink
-      "${config.home.homeDirectory}/nix-config/dotfiles/mpv/mpv.conf";
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/dotfiles/mpv/mpv.conf";
   xdg.configFile."mpv/input.conf".source =
-    config.lib.file.mkOutOfStoreSymlink
-      "${config.home.homeDirectory}/nix-config/dotfiles/mpv/input.conf";
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nix-config/dotfiles/mpv/input.conf";
 
   # 装了 imv 之后可以用 `xdg-mime default imv.desktop image/png` 之类把它设成
   # 图片默认打开方式。没有写进配置是因为 ~/.config/mimeapps.list 是仓库外的手工文件
