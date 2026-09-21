@@ -10,6 +10,7 @@
 
     lsof
     lazygit
+    lazydocker
     trash-cli
 
     tree-sitter

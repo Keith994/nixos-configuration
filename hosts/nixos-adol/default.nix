@@ -18,6 +18,7 @@
       ../../modules/nixos/fcitx5.nix
       ../../modules/nixos/clash-verge.nix
       ../../modules/nixos/docker.nix
+      ../../modules/nixos/packet-capture.nix
     ];
 
   # UEFI
@@ -34,6 +35,12 @@
       "wheel"
       "networkmanager"
       "docker"
+
+      # 抓包免 sudo：tcpdump 的 setcap wrapper 只对 pcap 组开放，
+      # wireshark 的 dumpcap 只对 wireshark 组开放（两个组由
+      # modules/nixos/packet-capture.nix 创建）。不进组就只能 sudo 抓。
+      "pcap"
+      "wireshark"
     ];
   };
 

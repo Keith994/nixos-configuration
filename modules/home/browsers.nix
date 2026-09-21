@@ -1,6 +1,27 @@
-{ inputs, ... }:
+{ inputs, pkgs, ... }:
 
 {
+  # 浏览器只有两个，共用同一套「强制原生 Wayland + 走 fcitx5 输入法」的诉求，
+  # 所以放一个文件里。默认浏览器两边都**没**抢：chrome 这边是 HM 模块的默认值，
+  # Zen 那边 setAsDefaultBrowser 也刻意没开；要改就 `xdg-mime default ...`。
+
+  # Chrome 走 HM 的 programs.chromium（package 指到 google-chrome）。
+  programs.chromium = {
+    enable = true;
+
+    # 用 Home Manager 的 Chromium 模块管理 Google Chrome
+    package = pkgs.google-chrome;
+
+    commandLineArgs = [
+      # niri 下强制原生 Wayland
+      "--ozone-platform=wayland"
+
+      # fcitx5 / Rime Wayland 输入
+      "--enable-wayland-ime"
+      "--wayland-text-input-version=3"
+    ];
+  };
+
   # nixpkgs 26.05 里没有 zen-browser 包，用的是 flake.nix 里那个社区 flake 的
   # programs.zen-browser 模块（它内部复用 HM 的 mkFirefoxModule，所以 profiles / policies /
   # settings / bookmarks 这些选项和 programs.firefox 是同一套写法）。
@@ -17,6 +38,5 @@
     env.MOZ_ENABLE_WAYLAND = "1";
 
     # 自更新和遥测由模块 mkDefault 成 DisableAppUpdate / DisableTelemetry，不在这里重复。
-    # setAsDefaultBrowser 故意没开：chrome 那边也没抢默认，等真需要再打开。
   };
 }

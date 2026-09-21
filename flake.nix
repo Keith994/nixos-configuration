@@ -4,7 +4,8 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
-    # 只为**一个包**引入 unstable：clash-verge-rev（26.05 = 2.4.7，unstable = 2.5.2）。
+    # 只为**个别包**引入 unstable：clash-verge-rev（26.05 = 2.4.7，unstable = 2.5.2）和
+    # wechat（26.05 = 4.1.1.4，unstable = 4.1.1.8）。
     # 刻意 **不加** inputs.nixpkgs.follows —— 加了就等于又换回 26.05 的包，等于没换。
     # 也刻意不把它用在系统上：outputs 里只 import 出一个独立实例 pkgsUnstable，
     # 取到的包自带它那份 GTK/WebKit 闭包，与系统 pkgs 并存，不会牵动全系统重新求值/重建。
@@ -64,10 +65,16 @@
       system = "x86_64-linux";
       username = "keith";
 
-      # 独立于系统 nixpkgs 的实例，目前只服务 clash-verge 一个包
-      # （modules/nixos/clash-verge.nix）。用默认 config：那个包是 gpl3Only、不涉及 unfree；
-      # 将来若真有 unfree 的依赖进来，构建会直接报错，而不是被系统那份白名单悄悄放行。
-      pkgsUnstable = import inputs.nixpkgs-unstable { inherit system; };
+      # 独立于系统 nixpkgs 的实例，目前服务两个包：clash-verge-rev（modules/nixos/clash-verge.nix）
+      # 和 wechat（modules/home/wechat.nix）。模块要拿到它就分别走 specialArgs /
+      # home-manager.extraSpecialArgs —— 两边都得传，别只传系统侧。
+      # config 里只放行 wechat 这一个 unfree 名字：它是闭源二进制，不放行会直接求值失败；
+      # 其余保持默认的 allowUnfree = false，这样将来再有 unfree 包进来是**构建报错**，
+      # 而不是被系统那份白名单悄悄放行（别图省事写成 allowUnfree = true）。
+      pkgsUnstable = import inputs.nixpkgs-unstable {
+        inherit system;
+        config.allowUnfreePredicate = pkg: builtins.elem (nixpkgs.lib.getName pkg) [ "wechat" ];
+      };
     in
     {
       nixosConfigurations.nixos-adol =
@@ -88,7 +95,7 @@
               home-manager.useUserPackages = true;
 
               home-manager.extraSpecialArgs = {
-                inherit inputs username;
+                inherit inputs username pkgsUnstable;
               };
 
               home-manager.users.${username} =

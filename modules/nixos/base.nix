@@ -38,7 +38,9 @@
     git
     neovim
   ];
-  # obsidian 也是 unfree（闭源 Electron 应用），加包时别忘了同步这个白名单。
+  # obsidian / feishu 也是 unfree（闭源 Electron 应用），加包时别忘了同步这个白名单。
+  # wechat 曾经也在这个表里：现在它取自 pkgsUnstable（modules/home/wechat.nix），
+  # 那份 unfree 放行跟着 flake.nix 里的 pkgsUnstable.config 走，别在这儿重复加。
   nixpkgs.config.allowUnfreePredicate = pkg:
     builtins.elem (lib.getName pkg) [
       "google-chrome"

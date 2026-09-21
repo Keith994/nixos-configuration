@@ -21,5 +21,8 @@
     # 可执行文件名是 Telegram（大写，meta.mainProgram），Wayland app-id 是
     # org.telegram.desktop；niri 里 Mod+T 走 scripts/switch.sh 聚焦/启动它。
     telegram-desktop
+
+    # wechat 不在这里：它要用 unstable 的包、还得单独塞 QT_IM_MODULE（不塞就一个中文都
+    # 打不进去），见 modules/home/wechat.nix。
   ];
 }

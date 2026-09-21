@@ -10,9 +10,9 @@
 | --- | --- |
 | 类型 | 单机 NixOS + home-manager flake 配置 |
 | 主机 | `nixos-adol`（`networking.hostName = "adol"`） |
-| 用户 | `keith`（属组 `wheel`、`networkmanager`） |
+| 用户 | `keith`（属组 `wheel`、`networkmanager`、`docker`、`pcap`、`wireshark`；后两个是抓包免 sudo 用的，见 `modules/nixos/packet-capture.nix`） |
 | 系统 / stateVersion | `26.05` |
-| 输入 | `nixpkgs` → `nixos-26.05`；`home-manager` → `release-26.05`（follows nixpkgs）；`noctalia` → `github:noctalia-dev/noctalia/cachix`（**不** follows，见第 8 节第 14 条）；`zen-browser` → `github:0xc000022070/zen-browser-flake`（两个 follows 都加，见第 8 节第 12 条）；`umbriel` → `git+https://github.com/noctalia-dev/umbriel`（**不** follows，见第 8 节第 15 条）；`nixpkgs-unstable` → `nixos-unstable`（**不** follows，只给 clash-verge 一个包用，见第 8 节第 17 条） |
+| 输入 | `nixpkgs` → `nixos-26.05`；`home-manager` → `release-26.05`（follows nixpkgs）；`noctalia` → `github:noctalia-dev/noctalia/cachix`（**不** follows，见第 8 节第 14 条）；`zen-browser` → `github:0xc000022070/zen-browser-flake`（两个 follows 都加，见第 8 节第 12 条）；`umbriel` → `git+https://github.com/noctalia-dev/umbriel`（**不** follows，见第 8 节第 15 条）；`nixpkgs-unstable` → `nixos-unstable`（**不** follows，只给 clash-verge 和 wechat 两个包用，见第 8 节第 17、19 条） |
 | 时区 / 桌面 | `Asia/Shanghai` / niri + Noctalia(v5) + noctalia-greeter 登录器；会话选择器里另有 Umbriel（可选测试会话，默认会话仍是 niri，见第 8 节第 15 条） |
 | 上游远端 | `git@github.com:Keith994/nixos-configuration.git`（本地目录名是 `~/nix-config`） |
 
@@ -75,6 +75,8 @@ nixfmt <file.nix>
 | `greetd.nix` | noctalia-greeter：greetd + `greeter.toml`（tmpfiles）+ AccountsService/polkit（见第 8 节第 8 条） |
 | `clash-verge.nix` | `programs.clash-verge`（serviceMode + `clash-verge` 组）；GUI 由 `dotfiles/niri/startup.kdl` 拉起，不用模块的 autoStart；**包**取自 `nixpkgs-unstable`（模块仍是 26.05 的，见第 8 节第 17 条） |
 | `fcitx5.nix` | fcitx5 + `waylandFrontend`，rime 引擎用 rime-ice |
+| `docker.nix` | `virtualisation.docker.enable`（daemon 由 systemd 管，用户组在 host 模块的 `extraGroups` 里声明） |
+| `packet-capture.nix` | 抓包工具的特权 wrapper：`programs.tcpdump`（挂 cap_net_raw → `pcap` 组）+ `programs.wireshark`（dumpcap 挂 cap_net_raw,cap_net_admin → `wireshark` 组；`package = pkgs.wireshark` 才带 GUI，默认只给 wireshark-cli）。两个组在 host 模块的 `extraGroups` 里，**不进组就只能 sudo 抓** |
 | `vmware.nix` | VMware guest 支持 —— **当前没有被任何 host import**，需要时自行加进 `hosts/nixos-adol/default.nix` |
 
 ### 用户层 `modules/home/`
@@ -89,18 +91,19 @@ nixfmt <file.nix>
 | `ghostty.nix` | ghostty（nixpkgs 稳定版）+ zsh 集成；整个 `dotfiles/ghostty` **目录** out-of-store 软链（config 里的相对路径 `shader/`、`themes/` 和 noctalia 写的 `themes/noctalia` 都得落在仓库里，见第 5、8 节；nightly 试过，见第 8 节第 6 条） |
 | `foot.nix` | 装 `foot` / `footclient`，整个 `dotfiles/foot` 目录 out-of-store 软链到 `~/.config/foot`；server 由 niri 启动项拉起（见第 8 节第 13 条） |
 | `tmux.nix` | tmux，配置用 `builtins.readFile ../../dotfiles/tmux/tmux.conf` |
-| `mpv.nix` | `pkgs.mpv.override`（挂 `mpvScripts.mpris`，让 noctalia 的媒体组件/媒体键能看到它）+ `dotfiles/mpv/{mpv.conf,input.conf}` 两个**单文件** out-of-store 软链（不整目录链：mpv 往 `~/.config/mpv/watch_later/` 写进度）；键位是 vim 风格 |
-| `imv.nix` | `programs.imv`：Wayland 原生键盘图片查看器，深色底 + 浮层 + vim 的 `n`/`N` 翻图。**没**配默认打开方式：`~/.config/mimeapps.list` 是仓库外的手工文件（`image/png` 现在指向 Chrome），要改直接 `xdg-mime default imv.desktop image/png` |
-| `satty.nix` | `programs.satty`（截图标注，只打开已有图片）+ `wl-clipboard`（satty 的 `copy-command` 要 `wl-copy`，顺便给终端用）；`Mod+Shift+A` 走 `dotfiles/niri/scripts/satty-last.sh` 标注最新一张截图（见第 8 节第 5 条） |
+| `media.nix` | 看图 / 标注 / 播放一组：`pkgs.mpv.override`（挂 `mpvScripts.mpris`，让 noctalia 的媒体组件/媒体键能看到它）+ `dotfiles/mpv/{mpv.conf,input.conf}` 两个**单文件** out-of-store 软链（不整目录链：mpv 往 `~/.config/mpv/watch_later/` 写进度）；`programs.imv`（深色底 + 浮层 + vim 的 `n`/`N` 翻图。**没**配默认打开方式：`~/.config/mimeapps.list` 是仓库外的手工文件，要改直接 `xdg-mime default imv.desktop image/png`）；`programs.satty`（截图标注，只打开已有图片）+ `wl-clipboard`（satty 的 `copy-command` 要 `wl-copy`，顺便给终端用）—— `Mod+Shift+A` 走 `dotfiles/niri/scripts/satty-last.sh` 标注最新一张截图（见第 8 节第 5 条） |
 | `yazi.nix` | yazi + 预览依赖；整个 `dotfiles/yazi` 目录 out-of-store 软链（`ya pack` 装的东西会直接落进仓库，见第 5 节） |
 | `niri.nix` | 整个 `dotfiles/niri` 目录 out-of-store 软链（noctalia 的 niri 模板要往这个目录写 `noctalia.kdl` 和 include 行，见第 5 节） |
 | `umbriel.nix` | `~/.config/umbriel` → `dotfiles/umbriel` 整目录 out-of-store 软链（noctalia 会写 `noctalia.toml`）；刻意不 import 上游 `homeModules.default`（见第 8 节第 15 条） |
 | `noctalia.nix` | `inputs.noctalia` 的 `programs.noctalia` 模块 + `dotfiles/noctalia/config.toml`（构建期 validate，见第 8 节第 14 条） |
 | `rime.nix` | 见第 6 节「Rime 特例」 |
-| `devtools.nix` | go / rustc / cargo / nodejs / yarn / lazygit / trash-cli / tree-sitter 等 |
-| `chrome.nix` | `programs.chromium` + `pkgs.google-chrome`，强制 Wayland 与 fcitx5 IME |
-| `zen.nix` | `inputs.zen-browser` 的 `programs.zen-browser` 模块（beta 通道，命令行 `zen-beta`）；nixpkgs 里没有这个包（见第 8 节第 12 条） |
+| `devtools.nix` | go / rustc / cargo / nodejs / yarn / lazygit / lazydocker / trash-cli / tree-sitter 等 |
+| `edge.nix` | 容器 / k8s 一组：`programs.k9s`（refreshRate 放宽到 5s + 鼠标滚轮）、HM 的 `services.podman`（**只做 rootless**，不碰 docker socket；`/etc/subuid` 与 setuid `newuidmap` 本机已具备）、`helm` / `kubectl` / `kubectl-convert` / `kubectx`（HM 没有 `programs.helm` / `programs.kubectl`，只能装包） |
+| `iot.nix` | 物联网 / 串口 / MQTT 一组：`mqttui`、`mosquitto`（只要客户端，broker 没在跑）、`mbpoll`、`picocom`（keith 不在 `dialout` 组，现在要 sudo）、`socat` |
+| `network.nix` | 网络排查一组：`nmap`（connect 扫描不需要特权）、`iperf3`（只当客户端，5201 没放行）、`grpcurl`。抓包那两个在系统层，见 `modules/nixos/packet-capture.nix` |
+| `browsers.nix` | 两个浏览器：`programs.chromium` + `pkgs.google-chrome`（强制 Wayland 与 fcitx5 IME）；`inputs.zen-browser` 的 `programs.zen-browser` 模块（beta 通道，命令行 `zen-beta`；nixpkgs 里没有这个包，见第 8 节第 12 条）。两个都**没**抢默认浏览器 |
 | `apps.nix` | 没有 `programs.*` 模块、也不需要额外包装参数的 GUI 应用（obsidian、localsend、telegram-desktop）。unfree 的要同步 `base.nix` 的白名单 |
+| `wechat.nix` | 微信：**包**取自 `pkgsUnstable`（26.05 = 4.1.1.4，unstable = 4.1.1.8），并自己套一层 `symlinkJoin` + `wrapProgram --set QT_IM_MODULE fcitx` —— 少了这个变量一个中文都打不进去（见第 8 节第 19 条） |
 | `fontconfig.nix` | 把 `dotfiles/fontconfig/fonts.conf` 软链到 `~/.config/fontconfig/fonts.conf`（见第 8 节第 11 条） |
 | `ai/deepseek-harness.nix` | 打包 `dsh` 命令（见第 7 节） |
 
@@ -120,7 +123,7 @@ nixfmt <file.nix>
 
 `mkOutOfStoreSymlink` 把**绝对路径**写死成 `${config.home.homeDirectory}/nix-config/dotfiles/...`，
 所以仓库必须留在 `~/nix-config`；换目录要同步改 `modules/home/` 下的 `nvim.nix`、`ghostty.nix`、
-`foot.nix`、`mpv.nix`、`niri.nix`、`yazi.nix`、`umbriel.nix`、`starship.nix`。
+`foot.nix`、`media.nix`、`niri.nix`、`yazi.nix`、`umbriel.nix`、`starship.nix`。
 
 目录级 out-of-store 软链（`~/.config/<app>` 整体指向仓库目录）除了"改完不用 rebuild"，还有一个硬需求：
 **noctalia 的主题模板要往这些目录里写文件**（niri 的 `noctalia.kdl` 与 `config.kdl` 里的 include 行、
@@ -218,7 +221,7 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
     `config.kdl` 的 `screenshot-path` 决定，现在是 `~/Pictures/Screenshots/` 下带 `%Y-%m-%d %H-%M-%S`
     时间戳的文件）+ noctalia v5 的 `screenshot-region` / `screenshot-annotate` IPC。
     要改截图按键先看 `noctalia msg --help` 里有没有现成子命令，别再引入外部截图工具链。
-   satty 现在**装了**（`modules/home/satty.nix`，连带 `wl-clipboard`），但它只做「打开已有图片来画」：
+   satty 现在**装了**（`modules/home/media.nix`，连带 `wl-clipboard`），但它只做「打开已有图片来画」：
    `Mod+Shift+A` → `dotfiles/niri/scripts/satty-last.sh` 打开截图目录里最新的一张。
    也就是说 satty 不参与截图、只是标注器，`noctalia msg annotate <path>` 是它的同类替代。
 6. ghostty 保持 nixpkgs 的稳定版（`programs.ghostty` 默认的 `pkgs.ghostty`）。
@@ -299,12 +302,16 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
     不设 `XCURSOR_THEME` 时 xcursor 会去找名为 `default` 的主题（本机没有），于是合成器自己画的
     边缘拖拽/移动光标、以及 Qt / XWayland / Electron 各自回退到内置箭头，看着就是"光标混用"。
     `[environment]` / niri 的 `environment {}` **只在会话启动时生效**，改完要重开会话。
-17. clash-verge 的**包**来自 unstable、**模块**仍是 26.05 的 —— 这是"单个包吃 unstable"的标准姿势：
+17. clash-verge 的**包**来自 unstable、**模块**仍是 26.05 的 —— 这是"单个包吃 unstable"的标准姿势
+    （wechat 走同一套，见第 19 条）：
     - `flake.nix` 里有第二个 nixpkgs input `nixpkgs-unstable`（`nixos-unstable`），**不加** follows，
-      只 `import` 成一个独立实例 `pkgsUnstable`、经 `specialArgs` 传给系统模块。**不要**把它接到
-      `nixpkgs.overlays`（会静默替换全仓库对该包的引用）、也不要顺着它把系统迁到 unstable；
-    - `modules/nixos/clash-verge.nix` 只覆盖 `programs.clash-verge.package`（26.05 = 2.4.7，
-      unstable = 2.5.2；`gpl3Only`，所以 `pkgsUnstable` 用默认 config 即可，不涉及 unfree 白名单）；
+      只 `import` 成一个独立实例 `pkgsUnstable`，经 `specialArgs` 传给系统模块、经
+      `home-manager.extraSpecialArgs` 传给用户模块（两边都要给，用户侧的 wechat 就是这么拿到的）。
+      **不要**把它接到 `nixpkgs.overlays`（会静默替换全仓库对该包的引用）、也不要顺着它把系统迁到 unstable；
+    - `pkgsUnstable` 的 `config` 里只放行 `wechat` 一个 unfree 名字（它是闭源二进制），clash-verge
+      是 `gpl3Only`、不涉及 unfree。别图省事写成 `allowUnfree = true`：那样这个实例就失去
+      "新 unfree 包进来直接构建报错"的哨兵作用了；
+    - `modules/nixos/clash-verge.nix` 只覆盖 `programs.clash-verge.package`（26.05 = 2.4.7，unstable = 2.5.2）；
     - 模块级差异只有两处：unstable 的模块给服务加了 `StateDirectory = "clash-verge-service"`
       （本仓库在 `clash-verge.nix` 里用 `lib.mkIf` 自己补上了，否则 `ProtectSystem = "strict"` 下
       新版服务端写 `/var` 会失败），以及 tunMode 的 `checkReversePath` 断言 / 默认值
@@ -334,6 +341,26 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       目前是 0 —— 想恢复休眠再评估，别为它拆分区；
     - 排查手法：`zramctl` / `cat /proc/swaps` 看用量，`cat /proc/pressure/memory` 看真实内存压力，
       `grep pswp /proc/vmstat` 看有没有真发生过换入换出（本机 1 天多 uptime 里是 0）。
+19. 微信（`modules/home/wechat.nix`）：**包**取自 unstable，且必须带上 `QT_IM_MODULE=fcitx` 才能打中文。
+    - 版本：26.05 = `wechat-4.1.1.4`、unstable = `4.1.1.8`。两个都是官方 Linux AppImage 经
+      `appimageTools.wrapAppImage` 打成 bwrap FHS 沙箱（store 里那串 `-extracted` / `-fhsenv-rootfs` /
+      `-bwrap`），所以 `base.nix` 的 `allowUnfreePredicate` 里**不再**需要 `"wechat"` ——
+      unfree 放行跟着 `pkgsUnstable` 挪到 `flake.nix` 了（见第 17 条）；
+    - 中文打不进去的根因**不是**沙箱、也不是缺 fcitx5-qt 动态库：这个 AppImage 里根本没有 Qt 动态库
+      （`readelf -d opt/wechat/wechat` 里没有任何 `libQt*`），Qt 和 fcitx 的 platforminputcontext
+      都是**静态**编进那个 135MB 主程序的（`strings` 里能查到 `QFcitxPlatformInputContextPlugin`，
+      还有 `fcitx-qt5/qt5/platforminputcontext/fcitxinputcontextproxy.cpp` 的源码路径）。
+      静态插件只在 `QT_IM_MODULE` 指到它时才会启用，而这个变量谁都没设 —— 会话里只有
+      `dotfiles/niri/environment.kdl` 的 `XMODIFIERS=@im=fcitx`（走 XIM，实测对微信无效）；
+    - 修法是**只给微信**套一层 `symlinkJoin` + `wrapProgram --set QT_IM_MODULE fcitx`（`fcitx` 不要写成
+      `fcitx5`，fcitx5-qt 两个 key 都认，但社区踩坑记录全是 `fcitx`）。**不要**把它加进
+      `environment {}` / `environment.sessionVariables`：fcitx5 是 `waylandFrontend = true`，
+      全局设 `QT_IM_MODULE` / `GTK_IM_MODULE` 会让其它应用绕开 Wayland text-input 前端；
+    - 这个 AppImage 的 Qt 只编了 xcb 平台插件（二进制里**没有** `QWayland*`），本来就跑在 XWayland 下，
+      所以网上那种 `QT_QPA_PLATFORM=xcb` + 清空 `WAYLAND_DISPLAY` 的写法在这里是多余的；
+    - 排查手法：`tr '\0' '\n' < /proc/$(pgrep -f 'opt/wechat/wechat' | head -1)/environ | grep -E 'IM_MODULE|XMODIFIERS'`
+      看沙箱进程真实环境；`strings <主程序> | grep PlatformInputContextPlugin` 看编进了哪些输入法插件；
+      fcitx5 侧用 `busctl --user list | grep -i fcitx` 确认 `org.freedesktop.portal.Fcitx` 在。
 
 ## 9. 改动流程（checklist）
 
