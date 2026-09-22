@@ -208,7 +208,7 @@ out-of-store 软链，见第 5 节），不用 rebuild、也不用重开会话�
 | `switch.sh` | 同上换 IPC；窗口 id 两边都是 ext-foreign-toplevel 的字符串标识 |
 
 `float.sh` 在 Mod+F 双向切换期间生成被忽略的 `float-animation.toml`，把 `windows_move`
-临时改成 350ms `easeout`：平铺 → 浮动使用随机位移 shader，浮动 → 平铺使用缩放收回 shader；
+临时改成 550ms `easeout`：平铺 → 浮动使用随机位移 shader，浮动 → 平铺使用缩放收回 shader；
 结束后删除该文件并 reload，恢复 `animations.toml` 里的 spring + squash。基础配置必须放在
 include 层，因为 Umbriel 的主配置值会压过所有 include；临时文件位于 optional include 的末尾，
 才能真正覆盖它。`Mod+F` 关闭了按键重复，并用运行时锁防止并发脚本互相提前清理覆盖。
