@@ -12,13 +12,14 @@
 # noctalia.toml 放最后一个：它是 noctalia 主题模板渲染出来的调色板，要能压过这里的一切颜色。
 # 注意（别手改这一行）：noctalia 的 templates/umbriel/apply.sh 会重排这一行并保证
 # "noctalia.toml" 在最后，格式也可能被它改写成自己的风格，属于预期行为。
-files = [ "outputs.toml", "keybinds.toml", "rules.toml"]
+files = [ "outputs.toml", "keybinds.toml", "rules.toml", "animations.toml"]
 
 [include.optional]
 # 和 niri 的 machine-custom.kdl 同一个用途：机器特有、不进版本库的覆盖。
 # 可选 include 缺文件会被静默忽略（niri 那边缺 machine-custom.kdl 反而会报错，
 # 见仓库 AGENTS.md 第 8 节第 7 条）。
-files = [ "machine-custom.toml", "noctalia.toml"]
+# float-animation.toml 由 scripts/float.sh 在 Mod+F 双向切换时短暂生成，动画结束后自动删除。
+files = [ "machine-custom.toml", "noctalia.toml", "float-animation.toml"]
 
 # ── 常规 ─────────────────────────────────────────────────────────────────────
 [general]
@@ -182,26 +183,21 @@ curve = "easeout"
 # 打开：快速缩放 + 轻微回弹
 [animation.windows_in]
 enabled = true
-duration_ms = 300
+duration_ms = 500
 curve = "spring:0.82,600"
 style = "popin"
 scale = 0.88
-# shader = "shaders/squash.glsl"      # Replaces the built-in opening style
+shader = "shaders/glide.glsl"      # Replaces the built-in opening style
 
 # 关闭：不要回弹，干净快速消失
 [animation.windows_out]
 enabled = true
-duration_ms = 150
+duration_ms = 850
 curve = "easeout"
 style = "fade"
-# shader = "shaders/reveal.glsl"      # Replaces the built-in opening style
+shader = "shaders/pop-drop.glsl"      # Replaces the built-in opening style
 
-# 移动 / resize：保留物理感，并由 squash shader 增加轻微形变
-[animation.windows_move]
-enabled = true
-duration_ms = 150
-curve = "spring:0.88,700"
-# shader = "shaders/squash.glsl"
+# 移动 / resize 配置在 animations.toml：必须留在 include 层，Mod+F 的临时配置才能覆盖它。
 
 # Workspace：比原来的 1,1000 稍微软，仍然足够跟手
 [animation.workspaces]

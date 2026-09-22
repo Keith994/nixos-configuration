@@ -29,6 +29,8 @@
 /dotfiles/foot/themes/noctalia
 /dotfiles/ghostty/themes/noctalia
 /dotfiles/umbriel/noctalia.toml
+# Mod+F 在浮动 / 平铺间切换时由 float.sh 短暂生成，动画结束后删除。
+/dotfiles/umbriel/float-animation.toml
 # yazi 是 noctalia 的**社区**模板（state 层 community_ids 里的 "yazi"）：
 # 模板渲染 flavors/noctalia.yazi/，它的 apply.sh 还会整份覆盖 theme.toml。
 /dotfiles/yazi/theme.toml

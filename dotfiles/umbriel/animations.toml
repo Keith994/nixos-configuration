@@ -1,0 +1,7 @@
+# windows_move 单独放在 include 中，让 scripts/float.sh 生成的可选配置能在
+# Mod+F 的两种切换期间临时覆盖它；主配置本身的值会压过所有 include，不能放回那里。
+[animation.windows_move]
+enabled = true
+duration_ms = 350
+curve = "spring:0.88,700"
+shader = "shaders/squash.glsl"

@@ -50,7 +50,7 @@
 # niri: fullscreen-window
 "Mod+Shift+M" = "window-toggle-fullscreen"
 # niri: ~/.config/niri/scripts/float.sh（已移植到 ~/.config/umbriel/scripts/float.sh）
-"Mod+F" = "spawn:~/.config/umbriel/scripts/float.sh"
+"Mod+F" = { action = "spawn:~/.config/umbriel/scripts/float.sh", repeat = false }
 "Mod+Q" = { action = "window-close", repeat = false }
 # niri 的 Mod+O { toggle-window-rule-opacity; } 在 umbriel 没有对应动作，没移植（见 README.md）
 

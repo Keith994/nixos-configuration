@@ -50,7 +50,7 @@ out-of-store 软链，见第 5 节），不用 rebuild、也不用重开会话�
 
 | niri（KDL） | umbriel（TOML） | 说明 |
 | --- | --- | --- |
-| `config.kdl` | `config.toml` | 常规 / 环境 / 工作区 / 外观 / 输入 / 布局 / 动画 / 热区 |
+| `config.kdl` | `config.toml` + `animations.toml` | 常规 / 环境 / 工作区 / 外观 / 输入 / 布局 / 动画 / 热区；`windows_move` 单独放在 include 层供 Mod+F 临时覆盖 |
 | `monitors.kdl` | `outputs.toml` | 连接器名和模式逐个搬 |
 | `keys.kdl` | `keybinds.toml` | **全量**翻译（见第 3 节第 2 条） |
 | `rules.kdl` + `noctalia.kdl` + `layouts.kdl` 的 `layer-rule` | `rules.toml` | 窗口规则 + 图层规则 |
@@ -204,8 +204,15 @@ out-of-store 软链，见第 5 节），不用 rebuild、也不用重开会话�
 | --- | --- |
 | `satty-last.sh` | 没改逻辑，只改了注释里的会话名。它只读 `~/Pictures/Screenshots`，不碰合成器 IPC |
 | `lock.sh` | `niri msg action do-screen-transition` 去掉（umbriel 没有过渡动画动作）、`power-off-monitors` → `umbriel msg dpms-off`，锁屏仍是 `noctalia msg session lock` |
-| `float.sh` | `niri msg --json windows` → `umbriel windows --json`；字段 `is_focused`/`is_floating` → `focused`/`floating`；`niri msg action` → `umbriel msg` |
+| `float.sh` | 使用 Umbriel IPC 切换浮动；进入浮动用 `random-float.glsl` 随机落位，回到平铺用 `tile-return.glsl` 缩放收回，结束后恢复全局 `windows_move` 配置 |
 | `switch.sh` | 同上换 IPC；窗口 id 两边都是 ext-foreign-toplevel 的字符串标识 |
+
+`float.sh` 在 Mod+F 双向切换期间生成被忽略的 `float-animation.toml`，把 `windows_move`
+临时改成 350ms `easeout`：平铺 → 浮动使用随机位移 shader，浮动 → 平铺使用缩放收回 shader；
+结束后删除该文件并 reload，恢复 `animations.toml` 里的 spring + squash。基础配置必须放在
+include 层，因为 Umbriel 的主配置值会压过所有 include；临时文件位于 optional include 的末尾，
+才能真正覆盖它。`Mod+F` 关闭了按键重复，并用运行时锁防止并发脚本互相提前清理覆盖。
+随机起点约在屏幕中心横向 ±12%、纵向 ±9% 的范围内，最终坐标仍由 `window-center` 管理。
 
 注意：umbriel 的 `umbriel windows --json` **只报已映射（mapped）的窗口**，
 而 `switch.sh` 原本在 niri 下也只能看到 niri 报的窗口；托盘里藏起来的窗口两边都找不到。
