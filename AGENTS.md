@@ -364,9 +364,6 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
 
 20. mpvpaper（`modules/home/media.nix`）：拿 mpv 当视频壁纸，**只装包 + 一个手动开关**，不写启动项。
     - 包在 nixpkgs 26.05 里就有（`mpvpaper-1.8`，gpl3Only，不涉及 `allowUnfreePredicate`），自带一份 mpv；
-    - 开关是 `Mod+Shift+W` → `dotfiles/niri/scripts/mpvpaper-toggle.sh`（同一个脚本开关两用）。
-      umbriel 那侧**没**加对应键位，要用就自己往 `dotfiles/umbriel/keybinds.toml` 补
-      `"Mod+Shift+W" = "spawn:.../mpvpaper-toggle.sh"`（脚本只读环境变量，不依赖 niri）；
     - 视频目录默认 `~/Videos/wallpapers`（`MPVPAPER_DIR` 覆盖），**刻意不放在 `~/Pictures/Wallpapers`**：
       那是 noctalia 壁纸面板的图片目录，混进视频会多出一堆打不开的条目。目录不存在 / 里面没有视频时
       脚本只弹一条通知就退出；输出默认 `ALL`（`MPVPAPER_OUTPUT=DP-1` 可只给一个屏）；

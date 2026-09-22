@@ -107,10 +107,6 @@ binds {
     Mod+W hotkey-overlay-title="Select a Wallpaper" { spawn-sh "noctalia msg panel-toggle wallpaper"; }
     Mod+Shift+Right { spawn "noctalia" "msg" "wallpaper-next"; }
     Mod+Shift+Left { spawn "noctalia" "msg" "wallpaper-previous"; }
-    // 视频壁纸（mpvpaper）的开关：开/关同一个脚本，视频从 ~/Videos/wallpapers 随机取。
-    // 刻意不 spawn-at-startup —— 它和 noctalia 的静态壁纸都画在 background 层，
-    // 同时开谁在上看层序，所以当手动工具用（见 AGENTS.md 第 8 节第 20 条）。
-    Mod+Shift+W hotkey-overlay-title="Toggle Video Wallpaper (mpvpaper)" { spawn-sh "~/.config/niri/scripts/mpvpaper-toggle.sh"; }
     // Mod+P 取色：noctalia v5 没有对应 IPC（原来的 dms color pick）。
     // 想保留这个功能就装个独立取色器（如 hyprpicker），然后在这里 spawn 它。
     Mod+Shift+V hotkey-overlay-title="Open Clipboard" { spawn-sh "noctalia msg panel-toggle clipboard"; }

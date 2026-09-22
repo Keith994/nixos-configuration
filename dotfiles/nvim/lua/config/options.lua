@@ -57,7 +57,7 @@ opt.inccommand = "nosplit" -- preview incremental substitute
 opt.jumpoptions = "view"
 opt.laststatus = 3         -- global statusline
 opt.linebreak = true       -- Wrap lines at convenient points
-opt.list = false            -- Show some invisible characters (tabs...
+opt.list = true            -- Show some invisible characters (tabs...
 opt.listchars = { tab = "» ", trail = "·", nbsp = "␣", space = "·" }
 opt.mouse = "a"            -- Enable mouse mode
 -- opt.mouse = ""

@@ -76,7 +76,7 @@
     })
 
     # mpvpaper：拿 mpv 当视频壁纸播放器（wlroots 系合成器的 layer-shell，niri 和
-    # umbriel 都能用）。**只装包 + 一个手动开关**：Mod+Shift+W 走
+    # umbriel 都能用）。**只装包** 
     # dotfiles/niri/scripts/mpvpaper-toggle.sh，刻意不写 spawn-at-startup ——
     # noctalia 自己也在管壁纸，两边同时往 background 层画会互相盖
     # （见 AGENTS.md 第 8 节第 20 条）。视频放 ~/Videos/wallpapers 里（脚本默认值，

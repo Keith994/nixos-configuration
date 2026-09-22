@@ -140,6 +140,7 @@
 "Mod+Shift+E" = { action = "spawn:doom +everywhere", repeat = false }
 "Mod+I" = "spawn:noctalia msg settings-toggle"
 "Mod+W" = "spawn:noctalia msg panel-toggle wallpaper"
+"Mod+Shift+W" = "spawn:noctalia msg panel-toggle noctalia/mpvpaper:picker"
 "Mod+Shift+Right" = "spawn:noctalia msg wallpaper-next"
 "Mod+Shift+Left" = "spawn:noctalia msg wallpaper-previous"
 "Mod+Shift+V" = "spawn:noctalia msg panel-toggle clipboard"
