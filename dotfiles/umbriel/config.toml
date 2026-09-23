@@ -19,7 +19,7 @@ files = [ "outputs.toml", "keybinds.toml", "rules.toml", "animations.toml"]
 # 可选 include 缺文件会被静默忽略（niri 那边缺 machine-custom.kdl 反而会报错，
 # 见仓库 AGENTS.md 第 8 节第 7 条）。
 # float-animation.toml 由 scripts/float.sh 在 Mod+F 双向切换时短暂生成，动画结束后自动删除。
-files = [ "machine-custom.toml", "noctalia.toml", "float-animation.toml"]
+files = [ "machine-custom.toml", "float-animation.toml", "noctalia.toml"]
 
 # ── 常规 ─────────────────────────────────────────────────────────────────────
 [general]
