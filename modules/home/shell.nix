@@ -49,7 +49,29 @@ in
     ];
 
     initContent = ''
-      # 使用 fzf-tab 接管补全菜单
+      # ── fzf-tab 补全 ──────────────────────────────────────────────
+      # zsh 默认只做「大小写敏感的前缀匹配」：候选在进 fzf 面板之前就被筛掉了
+      # （打 `readme` 匹配不到 `README`、打 `format` 匹配不到 `clang-format`），
+      # 光调 fzf 没用。matcher-list 是「一个接一个试、第一个出候选的生效」，
+      # 所以越宽松的规格放越后面，免得打一个字母候选就被冲爆：
+      #   ① 大小写不敏感的前缀匹配
+      #   ② ＋分段匹配（`f.b` → `foo.bar`、`nv/pl` → `nvim/plugins`）
+      #   ③ ＋任意位置匹配（只记得中间几个字：`rge` → `merge`）
+      zstyle ':completion:*' matcher-list \
+        'm:{a-zA-Z}={A-Za-z}' \
+        'm:{a-zA-Z}={A-Za-z} r:|[-_./]=* r:|=*' \
+        'm:{a-zA-Z}={A-Za-z} l:|=* r:|=*'
+
+      # 上面只管「zsh 给不给候选」；面板内的过滤是另一套，fzf 默认 smart-case
+      # （查询里出现大写就变敏感），跟上面那层不一致，这里强制全不敏感。
+      zstyle ':fzf-tab:*' fzf-flags --ignore-case
+
+      # 搜索框的预填内容是 prefix→input→first：当前词为空时（空命令行、`git `
+      # 这种参数位）前两个都空，于是拿「第一个候选」当查询词，面板一开就被一个
+      # 莫名其妙的查询过滤掉，看着像没触发。只留 input（空词就是空查询、列全部）。
+      zstyle ':fzf-tab:*' query-string input
+
+      # 不使用补全菜单（fzf-tab 要自己接管候选，官方 README 的要求）
       zstyle ':completion:*' menu no
 
       # Tab / Shift-Tab 在候选项之间移动
@@ -60,6 +82,12 @@ in
       # cd 时显示目录预览
       zstyle ':fzf-tab:complete:cd:*' \
         fzf-preview 'eza -1 --color=always $realpath'
+
+      # modules/home/cli.nix 的 programs.fzf.enableZshIntegration 会生成
+      # `source <(fzf --zsh)`，它排在 fzf-tab 之后并把 ^I 重绑成 fzf-completion
+      # （顺带引入 `**` 触发器）。fzf-tab 官方要求 ^I 的最后绑定者是它自己，
+      # 所以在 initContent 末尾抢回来。代价：`ls **<Tab>` 那个自带补全失效。
+      bindkey '^I' fzf-tab-complete
 
       source ~/.ai-api.zsh
     '';
