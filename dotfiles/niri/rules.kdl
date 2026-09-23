@@ -1,4 +1,6 @@
 window-rule {
+    geometry-corner-radius 20
+    clip-to-geometry true
     background-effect {
         blur true
     }
@@ -7,9 +9,8 @@ window-rule {
    match is-floating=true
    focus-ring {
         width 2
-        // active-color "#9b0000"
         inactive-color "#505050"
-       active-gradient from="#80c8ff" to="#9b0000" angle=45
+        active-gradient from="#80c8ff" to="#9b0000" angle=45
     }
    // baba-is-float true // 会上下轻微浮动
 }
