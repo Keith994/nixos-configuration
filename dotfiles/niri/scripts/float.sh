@@ -14,8 +14,8 @@ if [ "$floating" = "true" ]; then
 else
   niri msg action toggle-window-floating
   if [ "$is_app_id_null" != "null" ]; then
-    niri msg action set-window-height 60%
-    niri msg action set-window-width 60%
+    niri msg action set-window-height 85%
+    niri msg action set-window-width 80%
   fi
   niri msg action center-window
 fi
