@@ -43,7 +43,7 @@ gestures {
 }
 
 include "rules.kdl"
-include "animation.kdl"
+include "animations/glide.kdl"
 include "environment.kdl"
 include "keys.kdl"
 include "layouts.kdl"
