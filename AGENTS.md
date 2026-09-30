@@ -294,10 +294,10 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       键名随上游版本变，改完先 `umbriel validate -c ~/.config/umbriel/config.toml`；
     - `modules/home/umbriel.nix` 刻意不 import 上游 `homeModules.default`：`programs.umbriel.settings` 只能写
       单文件、挡不住 `[include]` 引用的同目录文件，而且它会把 umbriel 再装进 `home.packages`。
-16. 光标主题统一成 `Bibata-Modern-Ice`、尺寸 20，**四处字面量必须一致**：
+16. 光标主题统一成 `Bibata-Modern-Ice`、尺寸 24，**四处字面量必须一致**：
     `modules/nixos/icons.nix`（装包，system 级是为了 greeter 用户也解析得到）、`modules/nixos/greetd.nix`
     （`greeter.toml` 的 `cursor.theme` / `cursor.size`）、`dotfiles/niri/environment.kdl` 的
-    `XCURSOR_THEME` / `XCURSOR_SIZE` + `config.kdl` 的 `cursor { xcursor-size 20 }`、
+    `XCURSOR_THEME` / `XCURSOR_SIZE` + `config.kdl` 的 `cursor { xcursor-size 24 }`、
     `dotfiles/umbriel/config.toml` 的 `[input.cursor].theme`/`size` 与 `[environment]` 里的同名变量。
     不设 `XCURSOR_THEME` 时 xcursor 会去找名为 `default` 的主题（本机没有），于是合成器自己画的
     边缘拖拽/移动光标、以及 Qt / XWayland / Electron 各自回退到内置箭头，看着就是"光标混用"。

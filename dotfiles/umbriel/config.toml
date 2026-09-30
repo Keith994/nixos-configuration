@@ -71,7 +71,7 @@ MOZ_WEBRENDER = "1"
 # 这里给所有子进程定死，和 niri（environment.kdl）、greeter（greetd.nix）用同一套。
 # 主题包在 modules/nixos/icons.nix（system 级，greeter 也拿得到）；换主题改四处字面量。
 XCURSOR_THEME = "Bibata-Modern-Ice"
-XCURSOR_SIZE = "20"
+XCURSOR_SIZE = "24"
 # clash-verge 的"系统代理"只写 dconf，Chromium/Electron 在非 GNOME 会话下不读 gsettings，
 # 所以和 niri 一样给整个会话兜一层本机/局域网绕过。clash-verge 没开时别把
 # http_proxy / https_proxy / all_proxy 那三行打开（打开就是整个会话走代理）。
@@ -135,13 +135,13 @@ sensitivity = 0.2
 # scroll-method "two-finger" 在 umbriel 没有对应键，用 libinput 默认值
 
 [input.cursor]
-# niri: cursor { xcursor-size 20; hide-when-typing; }
+# niri: cursor { xcursor-size 24; hide-when-typing; }
 # theme 必须写出来：留空时 wlroots 拿 NULL 去让 xcursor 找名为 "default" 的主题（本机没有），
 # 结果窗口边缘拖拽/移动用的 ew-resize / col-resize / grab 全都解析不到、回退成默认箭头；
 # 同时 umbriel 暴露 cursor-shape-v1，Qt（noctalia 栏）这类客户端是直接问合成器要形状的，
 # 所以这里定死就等于把栏上的光标也一起修好。详见 [environment] 里那段注释。
 theme = "Bibata-Modern-Ice"
-size = 20
+size = 24
 hide_when_typing = true
 # niri: warp-mouse-to-focus
 follows_focus = true

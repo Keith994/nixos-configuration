@@ -36,5 +36,7 @@
 
     htop
     btop
+    gdu
+    tldr
   ];
 }

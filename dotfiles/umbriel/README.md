@@ -179,14 +179,14 @@ out-of-store 软链，见第 5 节），不用 rebuild、也不用重开会话�
 - Qt（noctalia 栏，走 `cursor_shape_v1` 直接问合成器要形状）/ XWayland / Electron
   这些不读 GTK 设置的程序各自回退到内置箭头。
 
-现在统一成 `Bibata-Modern-Ice`、尺寸 20（比原来的 24 小一点），**四处字面量必须一致**：
+现在统一成 `Bibata-Modern-Ice`、尺寸 24（一度降到 20，现已调回），**四处字面量必须一致**：
 
 | 文件 | 位置 | 管谁 |
 | --- | --- | --- |
 | `modules/nixos/icons.nix` | `bibata-cursors` | 装主题本体。system 级装，**greeter 用户**才解析得到 `share/icons/Bibata-Modern-Ice` |
 | `dotfiles/umbriel/config.toml` | `[input.cursor] theme` / `size` | 合成器自己画的光标 + 问合成器要形状的 Qt 客户端（`cursor_shape_v1`） |
 | `dotfiles/umbriel/config.toml` | `[environment] XCURSOR_THEME` / `XCURSOR_SIZE` | umbriel 会话里所有子进程（Qt / XWayland / Electron / GTK） |
-| `dotfiles/niri/environment.kdl` + `config.kdl` | `XCURSOR_THEME` / `XCURSOR_SIZE` / `cursor { xcursor-size 20 }` | niri 会话同样一套（这个坑 niri 也有） |
+| `dotfiles/niri/environment.kdl` + `config.kdl` | `XCURSOR_THEME` / `XCURSOR_SIZE` / `cursor { xcursor-size 24 }` | niri 会话同样一套（这个坑 niri 也有） |
 | `modules/nixos/greetd.nix` | `cursor.theme` / `cursor.size` | 登录页 greeter |
 
 - **`[environment]` / niri 的 `environment {}` 只在会话启动时生效**，改完要重开会话

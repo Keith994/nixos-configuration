@@ -14,7 +14,7 @@ let
     # 所以 greeter 用户也解析得到 share/icons/Bibata-Modern-Ice）
     cursor = {
       theme = "Bibata-Modern-Ice";
-      size = 20;
+      size = 24;
     };
 
     # 和 niri 的 xkb layout 保持一致

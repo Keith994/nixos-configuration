@@ -97,6 +97,8 @@ in
       ll = "ls -lah";
       la = "ls -A";
       l = "ls -CF";
+      lg = "lazygit";
+      td = "tldr";
 
       # Git
       gs = "git status";
