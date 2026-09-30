@@ -182,7 +182,7 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
 
 `modules/home/ai/deepseek-harness.nix` 用 `writeShellApplication` 包装 `dsh`：
 
-- 版本 **pin** 在 `@deepseek-ai/dsh@0.1.5-rc.1`（`npx --package=...`），升级 = 改这一行 + rebuild；
+- 版本 **pin** 在 `@deepseek-ai/dsh@0.2.0-rc.2`（`npx --package=...`），升级 = 改这一行 + rebuild；
 - runner 用 `node --expose-internals` 启动由 `$(command -v dsh)` 解析出的真实入口；
 - 设置 `DSH_HOME = ${xdg.dataHome}/deepseek-harness`；
 - `runtimeInputs` 里除 `nodejs_24` / `coreutils` 外还有 `pnpmOnly`、`gcc`、`python3`、`gnumake`：

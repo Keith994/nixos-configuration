@@ -42,7 +42,7 @@ let
     text = ''
       exec npx \
         --yes \
-        --package=@deepseek-ai/dsh@0.1.5-rc.1 \
+        --package=@deepseek-ai/dsh@0.2.0-rc.2 \
         -- ${dshRunner} "$@"
     '';
   };
