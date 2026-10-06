@@ -12,7 +12,7 @@
 | 主机 | `nixos-adol`（`networking.hostName = "adol"`） |
 | 用户 | `keith`（属组 `wheel`、`networkmanager`、`docker`、`pcap`、`wireshark`；后两个是抓包免 sudo 用的，见 `modules/nixos/packet-capture.nix`） |
 | 系统 / stateVersion | `26.05` |
-| 输入 | `nixpkgs` → `nixos-26.05`；`home-manager` → `release-26.05`（follows nixpkgs）；`noctalia` → `github:noctalia-dev/noctalia/cachix`（**不** follows，见第 8 节第 14 条）；`zen-browser` → `github:0xc000022070/zen-browser-flake`（两个 follows 都加，见第 8 节第 12 条）；`umbriel` → `git+https://github.com/noctalia-dev/umbriel`（**不** follows，见第 8 节第 15 条）；`nixpkgs-unstable` → `nixos-unstable`（**不** follows，只给 clash-verge 和 wechat 两个包用，见第 8 节第 17、19 条） |
+| 输入 | `nixpkgs` → `nixos-26.05`；`home-manager` → `release-26.05`（follows nixpkgs）；`noctalia` → `github:noctalia-dev/noctalia/cachix`（**不** follows，见第 8 节第 14 条）；`zen-browser` → `github:0xc000022070/zen-browser-flake`（两个 follows 都加，见第 8 节第 12 条）；`umbriel` → `git+https://github.com/noctalia-dev/umbriel`（**不** follows，见第 8 节第 15 条）；`nixpkgs-unstable` → `nixos-unstable`（**不** follows，只给 clash-verge 和 wechat 两个包用，见第 8 节第 17、19 条）；`nix-cachyos-kernel` → `github:xddxdd/nix-cachyos-kernel/release`（**不** follows，CachyOS 内核用，见第 8 节第 21 条） |
 | 时区 / 桌面 | `Asia/Shanghai` / niri + Noctalia(v5) + noctalia-greeter 登录器；会话选择器里另有 Umbriel（可选测试会话，默认会话仍是 niri，见第 8 节第 15 条） |
 | 上游远端 | `git@github.com:Keith994/nixos-configuration.git`（本地目录名是 `~/nix-config`） |
 
@@ -47,6 +47,10 @@ sudo nixos-rebuild build --flake ~/nix-config#nixos-adol
 # 全量检查（= nc）
 nix flake check ~/nix-config
 
+# 更新 flake.lock（= nu；不带参数=全部输入，也可只写 input 名，如 `nu nix-cachyos-kernel`）
+# ⚠️ 内核 pin 换过之后必须重做 attic 预取，否则 nr 会本地编内核，见第 8 节第 21 条
+nix flake update --flake ~/nix-config
+
 # 只做求值的快速回归：能抓出绝大多数类型 / 选项 / import 错误，比 rebuild 快得多
 nix eval .#nixosConfigurations.nixos-adol.config.system.build.toplevel.drvPath
 
@@ -63,7 +67,8 @@ nixfmt <file.nix>
 
 | 文件 | 作用 |
 | --- | --- |
-| `base.nix` | networkmanager、时区、flakes 实验特性、zram + `vm.swappiness`（唯一 swap，见第 8 节第 18 条）、git/neovim、`allowUnfreePredicate`(google-chrome / obsidian)；Cachix substituter（noctalia） |
+| `base.nix` | networkmanager、时区、flakes 实验特性、zram + `vm.swappiness`（唯一 swap，见第 8 节第 18 条）、git/neovim、`allowUnfreePredicate`(google-chrome / obsidian)；Cachix + Attic substituter（noctalia 与 CachyOS 内核，后者见第 8 节第 21 条） |
+| `kernel.nix` | CachyOS 内核：`overlays.pinned` + `linuxPackages-cachyos-latest-lto-zen4` + `boot.kernelParams = [ "amd_pstate=active" ]`。**不**替换本仓库 nixpkgs；内核下载要靠手工预取，见第 8 节第 21 条 |
 | `ssh.nix` | openssh：密码登录开，root 登录关 |
 | `shell.nix` | 系统层启用 zsh，并把普通用户 shell 设为 zsh（不影响 root） |
 | `fonts.nix` | 字体包都在这：maple-mono.NF-CN（拉丁/终端）、lxgw-wenkai（中文）、nerd-fonts.jetbrains-mono、nerd-fonts.symbols-only。fonts.conf 里点名的 family 必须能在这些包里找到（见第 8 节第 11 条） |
@@ -83,7 +88,7 @@ nixfmt <file.nix>
 
 | 文件 | 作用 |
 | --- | --- |
-| `shell.nix` | zsh：fzf-tab、自动建议、语法高亮、history、别名 `nr/nb/nc/nixcfg`；末尾 `source ~/.ai-api.zsh`（仓库外密钥） |
+| `shell.nix` | zsh：fzf-tab、自动建议、语法高亮、history、别名 `nr/nb/nc/nu/nup/nixcfg`（`nr`/`nb`/`nu`/`nup` 包了 clash 代理，`nc` 刻意没包）；末尾 `source ~/.ai-api.zsh`（仓库外密钥） |
 | `cli.nix` | fzf、zoxide、eza、bat、direnv(+nix-direnv)，以及 ripgrep/fd/jq/htop/btop 等 |
 | `git.nix` | `programs.git`：main 分支、fetch.prune、editor=nvim、ignore 规则；身份信息从 `~/.config/git/local.conf` include |
 | `starship.nix` | starship 提示符；`~/.config/starship.toml` 是指向 `dotfiles/starship/starship.toml` 的 out-of-store 软链（**必须可写**：noctalia 每次换壁纸都往里注入调色板块，所以那个文件被忽略、手写原始版跟踪在 `starship.toml.orig`；activation 在它缺失时从 `.orig` 播种）；`configPath` 必须与文件落点一致（见第 8 节第 2 条） |
@@ -426,6 +431,48 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       盖住"时暂停（man 里自称是 hack，各合成器表现不一），更可靠的用法是 `~/.config/mpvpaper/pauselist`
       / `stoplist`（写程序名，用 `pidof` 匹配，比如 firefox/steam/obs）。另外别把选项记混：
       `-s` 是 auto-stop、`-n SECS` 才是幻灯片模式。
+
+21. CachyOS 内核（`modules/nixos/kernel.nix`）：`linuxPackages-cachyos-latest-lto-zen4`（Clang + ThinLTO、
+    按 Zen4 编；8945H 是 Zen4 / family 25，这一档真吃得到）。四个要点：
+    - **`overlays.pinned` 只往 `pkgs` 里多塞一个 `cachyosKernels` 属性，不替换本仓库的 nixpkgs**
+      （上游实现就是 `final: prev: { cachyosKernels = self.legacyPackages.…; }`，根本不理 `prev`），
+      所以 home-manager 26.05 / noctalia / umbriel 的 pin 一个都不动，也不会全系统重编。**别换成
+      `overlays.default`**：那个会拿我们的 nixpkgs 编内核，hash 与上游 Attic 缓存对不上就得本地跑
+      Clang+ThinLTO。同理**别加 `inputs.nixpkgs.follows`**（上游 README 明确要求，补丁是按特定内核
+      版本准备的），并且用 `release` 分支而不是默认分支（前者永远指向 CI 已构建、缓存里有的提交）；
+    - `boot.kernelParams = [ "amd_pstate=active" ]` 眼下是 **no-op**：6.18 的默认就是它（实测
+      `/proc/cmdline` 里压根没这个参数，而 `amd_pstate/status` 已是 `active`、`scaling_driver` 是
+      `amd-pstate-epp`）。留着是当保险 —— CachyOS 内核 config 自带 `CONFIG_AMD_PSTATE_DEFAULT_MODE`，
+      换内核时默认值可能变。别顺手加 `passive` / `guided` / `amd_prefcore=disable` /
+      `amd_dynamic_epp=enable`，也别上 SCX / BORE / BMQ / RT 和常驻 performance governor：
+      这台机器是日常 + 开发，EPP 交给 `power-profiles-daemon` 切；
+    - **attic 缓存在 daemon 侧不可达，这是最容易踩的一条**：`attic.xuyh0120.win` 在本机**只有走
+      clash 的 10800 才连得上、直连不通**，而 `cache.nixos.org` 与 `noctalia.cachix.org` 都是直连
+      可达的。`modules/home/shell.nix` 里 `nr`/`nb`/`nu`/`nup` 的代理**只作用于客户端**（flake 输入
+      抓取），**下载 store 路径的却是 `nix-daemon`** —— 它由 systemd 拉起、不继承任何 shell 变量
+      （`DefaultEnvironment` 为空、单元 `Environment=` 无 proxy、机器上没有 TUN 设备）。那句
+      「`sudo env` 够用」的前提正是「缓存直连可达」，attic 是第一个打破它的。所以**每次
+      `nu nix-cachyos-kernel` 之后必须重做一次预取**（`nix copy` 的下载在客户端做，代理才有效），
+      否则 `nr` 会退化成几小时的本地编译：
+
+      ```bash
+      OUT=$(nix eval --raw .#nixosConfigurations.nixos-adol.config.boot.kernelPackages.kernel)
+      sudo env https_proxy=http://127.0.0.1:10800 nix copy \
+        --from https://attic.xuyh0120.win/lantian \
+        --extra-trusted-public-keys "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc=" "$OUT"
+      ```
+
+      第一次要带 `--extra-trusted-public-keys`（此刻 `/etc/nix/nix.conf` 还不认识 lantian），这次
+      switch 之后它就是受信 key、以后不必再写。上游 README 那句「先切一次让缓存生效再开内核」
+      解决的是 daemon **认不认识**这个缓存，解决不了**连不连得上**。验证手法：`nix eval --raw …kernel.drvPath`
+      取 hash，`curl -x http://127.0.0.1:10800 -o /dev/null -w '%{http_code}'
+      https://attic.xuyh0120.win/lantian/<hash>.narinfo` 应为 200，直连同一 URL 则失败；
+    - 升级内核 = `nu nix-cachyos-kernel`（内核版本从此不跟 nixpkgs 26.05 走，而是跟上上游 `release`
+      分支）。注意 `nup` 那个脚本只做 `--update-input nixpkgs`，**带不走内核**。out-of-tree 模块
+      （zfs / nvidia / virtualbox / vmware）不用自己想办法：上游 `packages.nix` 已经对所有
+      `linuxPackages-*` 套了 `kernelModuleLLVMOverride`（LTO 内核编外部模块必需），连 vbox / vmware
+      的 `makeFlags` 和 nvidia open 的补丁都补了；本机现在 `boot.extraModulePackages = [ ]`、
+      `vmware.nix` 也没被 import，所以眼下无关。
 
 ## 9. 改动流程（checklist）
 
