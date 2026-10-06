@@ -185,11 +185,61 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
 - 版本 **pin** 在 `@deepseek-ai/dsh@0.2.0-rc.2`（`npx --package=...`），升级 = 改这一行 + rebuild；
 - runner 用 `node --expose-internals` 启动由 `$(command -v dsh)` 解析出的真实入口；
 - 设置 `DSH_HOME = ${xdg.dataHome}/deepseek-harness`；
-- `runtimeInputs` 里除 `nodejs_24` / `coreutils` 外还有 `pnpmOnly`、`gcc`、`python3`、`gnumake`：
-  前者给 `dsh plugin --profile <name> <pnpm 参数>`（转发给 pnpm）用，后三者给 node-gyp 现场编译
-  原生模块用（例如 `dsh-better-sidebar` 依赖的 `node-pty`）。它们只在 wrapper 的 PATH 上，不进全局环境；
+- **node 由 fnm 提供，wrapper 不自己装 node**：`runtimeInputs` 里只有 `fnm`、`coreutils`、`pnpmOnly`、
+  `gcc`、`python3`、`gnumake`；真正的 node 是 `fnm exec --using="$DSH_NODE_VERSION" -- …` 放进 PATH 的
+  官方 node（默认 `DSH_NODE_VERSION=26`，现在解析到 fnm 的 v26.10.0）。`npx` 和 runner 里的 `node`
+  都在**同一个** fnm 上下文里解析，所以不取决于调用者 PATH 上是什么 node —— 为什么非得是官方构建的
+  node，见下面「两个版本陷阱」第 1 条；
+- `gcc` / `python3` / `gnumake` 给 node-gyp 用：像 `dsh-better-sidebar` 依赖的 `node-pty` 这类包要在
+  安装时现场编译原生模块（官方 node 不带头文件，node-gyp 会自己去 nodejs.org 拉）。它们只在 wrapper
+  的 PATH 上，不进全局环境；
 - `pnpmOnly` 是用 `symlinkJoin` 去掉 `pkgs.pnpm` 自带可执行文件（`node`/`npx`/`corepack`）、只留
-  `bin/pnpm`、`bin/pnpx` 的包装，避免它按 PATH 顺序遮蔽 `nodejs_24` —— **不要**图省事直接写 `pnpm`。
+  `bin/pnpm`、`bin/pnpx` 的包装，避免它按 PATH 顺序遮蔽 fnm 给出的 node（pnpm 在 dsh 进程里跑）——
+  **不要**图省事直接写 `pnpm`。
+
+### 两个版本陷阱（都踩过，别重复）
+
+1. **node 必须是官方构建**。dsh 0.2.x 的宿主层（`dsh-app-boot` 的 `installRuntimeInterception`）调原生
+   `node-addon-require-builtin`，它**反汇编运行中 node 的机器码**来定位 V8 getter 的偏移，所以只认官方
+   发布的 node 二进制。nixpkgs 自己编的 node 会在宿主准备阶段直接硬失败（`nodejs-slim-24.19.0` 与
+   `nodejs-26.8.2` 实测都一样）：
+
+   ```
+   dsh: host preparation failed: node-addon-require-builtin unsupported: Unsupported/no-getter
+     (x64 sysv getter is not a recognized this->field accessor)
+   ```
+
+   所以 wrapper 用 `fnm exec` 取 node（默认 26，`DSH_NODE_VERSION` 可覆盖）：fnm 里没有该版本时会在进
+   dsh 之前直接报错并提示 `fnm install 26`，不用等到宿主准备阶段看那段看不懂的 addon 报错。注意三点：
+   `devtools.nix` 里的 `nodejs`（nixpkgs 24）跟 dsh 无关，别混；**把 `nodejs_26` 之类写进
+   `runtimeInputs` 是无效的**（这么改过，rebuild 后照旧失败）；换 loader 版本也没用（把 0.2.0-rc.2 的
+   `node-addon-require-builtin` 降到 0.1.6 仍报同一个错，说明 0.1.x 那个老 dsh 能跑纯粹是因为它没有
+   这段宿主拦截）。
+2. **插件必须跟 runtime 版本对齐**（插件装在仓库外，`git status` 里看不到）。dsh 启动时按
+   peerDependencies 逐个检查 bundle，不匹配就整包 skip：
+
+   ```
+   dsh: skipping profile bundle "dsh-better-sidebar": Plugin dsh-better-sidebar@0.19.1 is incompatible
+     with dsh 0.2.0-rc.2: peerDependencies {"@deepseek-ai/dsh-agent":"^0.1.5-rc.1", …}
+   ```
+
+   09-30 那次 `0.1.5-rc.1 → 0.2.0-rc.2` 的 bump 就是这样把 09-15 装的一批插件全废掉的（它们 peer 指
+   `^0.1.5-rc.1`）。升/降 runtime 之后要跟着升插件，例如：
+
+   ```bash
+   dsh plugin --profile web add dsh-better-sidebar@0.24.1 dsh-codex-connect@0.2.0-alpha.2 \
+     dsh-cost-meter@1.8.11 dsh-dream-skin@10.5.0 dshmarket@1.66.8
+   ```
+
+   - 手工开的逐版本豁免记在 `$DSH_HOME/profiles/<profile>/compatibility.json`
+     （`{"<包>@<版本>": ["<runtime 版本>"]}`）：它会让那次不兼容被静默放过，升级到真正兼容的版本后
+     应当把对应条目删掉（留 `{}` 也行）；
+   - pnpm 11 还要求对安装期脚本逐个表决，写在 `$DSH_HOME/profiles/<profile>/pnpm-workspace.yaml` 的
+     `allowBuilds` 里。占位文字 `set this to true or false` 会让 pnpm 以 exit 1 结束 → dsh 判定这次
+     plugin 操作失败（**哪怕包其实已经装好了**）；`node-pty: true` 是必需的，其它第三方脚本先给
+     `false` 更安全（官方包消费者本来也不跑它们的 `prepare`/`postinstall`）；
+   - 改了 bundles（增删插件）**必须重启**该 profile 的 dsh 进程才生效，`patchReload: live` 只管 patch
+     文件。
 
 **插件装在仓库外**：`dsh plugin` 装出来的插件落在 `$DSH_HOME/profiles/<profile>/`（`package.json` 的
 `dsh.profile.bundles` + `node_modules`），不属于这份 flake，`git status` 里看不到。声明了
