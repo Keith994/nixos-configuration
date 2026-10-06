@@ -459,7 +459,20 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       排查手法：`nix eval --raw …kernel.drvPath` 取 hash，再分别**直连**和**走代理**测
       `curl -o /dev/null -w '%{http_code}' <substituter>/<hash>.narinfo`，就能看出这个缓存到底谁
       够得到。注意别用 `nix path-info --store <cache> <path> && echo ok` 在循环里判断 —— 它会误报
-      **没缓存**（这里被它骗过一次），**以 curl 的 HTTP 码为准**；
+      **没缓存**（这里被它骗过一次），**以 curl 的 HTTP 码为准**。
+      **首次激活还要手动预取一次**：`nixos-rebuild` 构建新系统用的是**当前**的 `/etc/nix/nix.conf`
+      （还没有新 substituter），所以这一次的内核得在客户端侧先灌进 store（`nix copy` 的下载在客户端
+      做，root 才受信那把 key）；激活之后 daemon 就认识它了，**以后升级内核不再需要任何手工步骤**。
+      只取 `^out,modules` 而**不是** `^*`：`dev` 那个 output 有 **609 MiB**（out 25 + modules 156 MiB），
+      而系统运行闭包里并不含它（实测当前系统的 `nix-store -qR /run/current-system` 里只有
+      `linux-*` 与 `linux-*-modules`，没有 `-dev`）—— 写 `^*` 要多下 3 倍多：
+
+      ```bash
+      K=$(nix eval --raw ~/nix-config#nixosConfigurations.nixos-adol.config.boot.kernelPackages.kernel.drvPath)
+      sudo nix copy --from https://cache.xinux.uz \
+        --extra-trusted-public-keys "cache.xinux.uz:BXCrtqejFjWzWEB9YuGB7X2MV4ttBur1N8BkwQRdH+0=" \
+        "$K^out,modules"
+      ```
     - `modules-shrunk` 那个 output **任何公共缓存里都不会有**（它依赖本机 `rootModules`，逐机不同），
       别看到它未命中就以为缓存坏了。它只是纯 shell 后处理（`modules-closure.sh`：按 rootModules
       挑模块 + 拷固件 + `depmod -a`），几分钟的活，**不是编译**；所以内核那几百 MB 下完之后，
