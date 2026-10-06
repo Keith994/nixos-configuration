@@ -5,6 +5,7 @@
     [
       ./hardware-configuration.nix
       ../../modules/nixos/base.nix
+      ../../modules/nixos/kernel.nix
       ../../modules/nixos/ssh.nix
       ../../modules/nixos/shell.nix
       ../../modules/nixos/fonts.nix
