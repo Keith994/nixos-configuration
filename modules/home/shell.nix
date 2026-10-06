@@ -118,8 +118,8 @@ in
       # 全量更新 flake.lock。和 nr/nb 不同，它**不用 sudo**：只写 flake.lock、抓输入，不碰 store。
       # 不带参数时更新全部输入 —— 这正是 AGENTS.md 第 17 节说的会让 nixpkgs-unstable pin 移动的
       # 那个动作，此前没有别名对应它（nup 那个脚本只动 nixpkgs）。--flake 指定仓库，所以任何目录
-      # 都能跑；位置参数仍是 input 名，`nu nix-cachyos-kernel` 可以只动内核 pin —— 但内核换了要
-      # 重做一次 attic 预取，见 modules/nixos/base.nix。
+      # 都能跑；位置参数仍是 input 名，`nu nix-cachyos-kernel` 可以只动内核 pin（内核产物的缓存
+      # 走备用镜像，见 modules/nixos/base.nix —— 直连可达，daemon 自己会下，没有手工步骤）。
       nu = "env ${proxyEnv} NO_PROXY=${noProxy} nix flake update --flake ~/nix-config";
 
       # nix-update 是 scripts/nix-update.sh 那个脚本：里面 `nix flake lock` 一行会继承这里的

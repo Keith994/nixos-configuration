@@ -57,7 +57,8 @@
     # CachyOS 内核：Clang + ThinLTO、按 Zen4 编译（接线在 modules/nixos/kernel.nix）。
     # 刻意 **不加** inputs.nixpkgs.follows —— 上游 README 明确要求别覆盖它的 nixpkgs：
     # CachyOS 的补丁是按特定内核版本准备的，跟着本仓库的 nixos-26.05 走会版本错配，
-    # 而且上游的 Attic 缓存是按它自己那份 nixpkgs 构建的，改了就等于放弃缓存、本地编内核。
+    # 而且上游缓存里的产物（见 modules/nixos/base.nix）是按它自己那份 nixpkgs 构建的，
+    # 改了就等于放弃缓存、本地编内核。
     # 用 release 分支而不是默认分支：release 永远指向 Hydra CI 已经构建完、缓存里有的提交。
     nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
   };

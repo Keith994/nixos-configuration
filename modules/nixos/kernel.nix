@@ -7,8 +7,8 @@
   # 用 overlays.pinned 而**不是** overlays.default：pinned 只往 pkgs 里多塞一个
   # cachyosKernels 属性（内核本身来自上游 pin 的 nixos-unstable-small），并不替换本仓库的
   # nixpkgs —— 所以 home-manager 26.05 / noctalia / umbriel 的 pin 一个都不动，也不会全系统重编。
-  # default 会拿我们自己的 nixpkgs 去编内核，而上游的 Attic 缓存是按它自己那份 nixpkgs 构建的，
-  # hash 一旦对不上就得在笔记本上本地跑 Clang+ThinLTO 编内核。
+  # default 会拿我们自己的 nixpkgs 去编内核，而缓存里的产物（见 base.nix）是按它自己那份 nixpkgs
+  # 构建的，hash 一旦对不上就得在笔记本上本地跑 Clang+ThinLTO 编内核。
   nixpkgs.overlays = [ inputs.nix-cachyos-kernel.overlays.pinned ];
 
   # 升级内核 = `nix flake update nix-cachyos-kernel`（不带参数的 nix flake update 也会带上它）。

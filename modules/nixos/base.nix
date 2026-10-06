@@ -20,34 +20,34 @@
     # noctalia 官方 Cachix（包里没有 nix cache 的构建）：不加这两行，inputs.noctalia 的包就得本地编译。
     # 注意：一旦给不支持的 substituter 签名，nix 会直接接受它下的包，所以 key 要照官方文档抄。
     #
-    # attic.lantian 是 CachyOS 内核（modules/nixos/kernel.nix）的缓存。上游 flake 自己在 nixConfig
-    # 里带了这两行，但 nixConfig **只在直接操作那个 flake 时生效**，作为本仓库的 input 时不会自动
-    # 带上 —— 所以必须在这儿照抄一遍。少了它，Clang+ThinLTO 的内核要在笔记本上本地编，很久。
+    # CachyOS 内核（modules/nixos/kernel.nix）的缓存。上游 flake 自己在 nixConfig 里带了它的
+    # 官方缓存，但 nixConfig **只在直接操作那个 flake 时生效**，作为本仓库的 input 时不会自动
+    # 带上 —— 所以必须在这儿自己配一份。少了它，Clang+ThinLTO 的内核要在笔记本上本地编，很久。
     #
-    # ⚠️ 本机实测：attic 只有走 clash 的 10800 才连得上，**直连不通**；而 cache.nixos.org 和
-    # noctalia.cachix.org 都是直连可达的。modules/home/shell.nix 里 nr/nb/nup 的代理只作用于
-    # **客户端**（flake 输入抓取），而**下载 store 路径的是 nix-daemon**、它由 systemd 拉起、
-    # 不继承任何 shell 变量 —— 那儿"sudo env 够用"的结论，前提正是"缓存直连可达"，attic 是第一个
-    # 打破这个前提的 substituter。所以这两行在**下载内核**这件事上代理不到它，内核要靠 root + 代理
-    # 手工预取（nix copy 是客户端下载，代理有效）：
+    # 这里用的是上游 README 列出的**备用镜像** cache.xinux.uz，而不是作者自己的
+    # attic.xuyh0120.win —— 这一条差别是决定性的。本机实测：attic 只有走 clash 的 10800 才连得上、
+    # **直连不通**，而 cache.xinux.uz / cache.nixos.org / noctalia.cachix.org 都**直连可达**。
+    # 为什么这很关键：modules/home/shell.nix 里 nr/nb/nu/nup 的代理**只作用于客户端**（flake 输入
+    # 抓取），而**下载 store 路径的是 nix-daemon**，它由 systemd 拉起、不继承任何 shell 变量
+    # （DefaultEnvironment 为空、单元 Environment= 无 proxy、机器上没有 TUN）。挂 attic 就等于
+    # 每次内核升级都要 root + 代理手工 `nix copy` 预取，漏了就退化成几小时本地编译；挂一个直连
+    # 可达的镜像，daemon 自己就能下，没有任何手工步骤。
     #
-    #   OUT=$(nix eval --raw .#nixosConfigurations.nixos-adol.config.boot.kernelPackages.kernel)
-    #   sudo env https_proxy=http://127.0.0.1:10800 nix copy \
-    #     --from https://attic.xuyh0120.win/lantian \
-    #     --extra-trusted-public-keys "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc=" "$OUT"
+    # 代价是信任方多一个：镜像的 narinfo 是**重新签名**的（整个文件只有 cache.xinux.uz 一条 Sig），
+    # 所以信的是镜像维护者而不是上游 CI 作者；上游 README 也明确声明不保证这个缓存的安全与可用性。
+    # 想换回作者自己的 attic（只信一把 key），得先让 daemon 够得到它：开 TUN，或给 daemon 配代理
+    # （记得把 cache.nixos.org / cachix 放进 no_proxy，否则 clash 没起时连它们一起断）。
     #
-    # 每次 `nix flake update nix-cachyos-kernel` 之后都要重做一次，否则会退化成几小时的本地
-    # Clang+ThinLTO 编译。留着这两行的意义：这次 switch 之后 lantian 就成为受信 key（以后 copy
-    # 不必再写 --extra-trusted-public-keys），以及将来网络变了（比如开了 TUN）能自动生效。
-    # 上游 README 那句"先切一次让缓存生效再开内核"解决的是 daemon **认不认识**这个缓存，
-    # 解决不了**连不连得上**。
+    # 附带一条免得白折腾：`modules-shrunk` 那个 output **任何公共缓存里都不会有** —— 它依赖本机的
+    # rootModules，逐机不同。但它只是纯 shell 后处理（modules-closure.sh：按 rootModules 挑模块 +
+    # 拷固件 + `depmod -a`），几分钟的活，**不是编译**，所以内核那几百 MB 下完之后本地很快就会结束。
     extra-substituters = [
       "https://noctalia.cachix.org"
-      "https://attic.xuyh0120.win/lantian"
+      "https://cache.xinux.uz"
     ];
     extra-trusted-public-keys = [
       "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
-      "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
+      "cache.xinux.uz:BXCrtqejFjWzWEB9YuGB7X2MV4ttBur1N8BkwQRdH+0="
     ];
   };
 

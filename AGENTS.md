@@ -48,7 +48,6 @@ sudo nixos-rebuild build --flake ~/nix-config#nixos-adol
 nix flake check ~/nix-config
 
 # 更新 flake.lock（= nu；不带参数=全部输入，也可只写 input 名，如 `nu nix-cachyos-kernel`）
-# ⚠️ 内核 pin 换过之后必须重做 attic 预取，否则 nr 会本地编内核，见第 8 节第 21 条
 nix flake update --flake ~/nix-config
 
 # 只做求值的快速回归：能抓出绝大多数类型 / 选项 / import 错误，比 rebuild 快得多
@@ -67,8 +66,8 @@ nixfmt <file.nix>
 
 | 文件 | 作用 |
 | --- | --- |
-| `base.nix` | networkmanager、时区、flakes 实验特性、zram + `vm.swappiness`（唯一 swap，见第 8 节第 18 条）、git/neovim、`allowUnfreePredicate`(google-chrome / obsidian)；Cachix + Attic substituter（noctalia 与 CachyOS 内核，后者见第 8 节第 21 条） |
-| `kernel.nix` | CachyOS 内核：`overlays.pinned` + `linuxPackages-cachyos-latest-lto-zen4` + `boot.kernelParams = [ "amd_pstate=active" ]`。**不**替换本仓库 nixpkgs；内核下载要靠手工预取，见第 8 节第 21 条 |
+| `base.nix` | networkmanager、时区、flakes 实验特性、zram + `vm.swappiness`（唯一 swap，见第 8 节第 18 条）、git/neovim、`allowUnfreePredicate`(google-chrome / obsidian)；Cachix + 备用镜像 substituter（noctalia 与 CachyOS 内核，后者见第 8 节第 21 条） |
+| `kernel.nix` | CachyOS 内核：`overlays.pinned` + `linuxPackages-cachyos-latest-lto-zen4` + `boot.kernelParams = [ "amd_pstate=active" ]`。**不**替换本仓库 nixpkgs；内核产物走备用镜像缓存，见第 8 节第 21 条 |
 | `ssh.nix` | openssh：密码登录开，root 登录关 |
 | `shell.nix` | 系统层启用 zsh，并把普通用户 shell 设为 zsh（不影响 root） |
 | `fonts.nix` | 字体包都在这：maple-mono.NF-CN（拉丁/终端）、lxgw-wenkai（中文）、nerd-fonts.jetbrains-mono、nerd-fonts.symbols-only。fonts.conf 里点名的 family 必须能在这些包里找到（见第 8 节第 11 条） |
@@ -437,7 +436,7 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
     - **`overlays.pinned` 只往 `pkgs` 里多塞一个 `cachyosKernels` 属性，不替换本仓库的 nixpkgs**
       （上游实现就是 `final: prev: { cachyosKernels = self.legacyPackages.…; }`，根本不理 `prev`），
       所以 home-manager 26.05 / noctalia / umbriel 的 pin 一个都不动，也不会全系统重编。**别换成
-      `overlays.default`**：那个会拿我们的 nixpkgs 编内核，hash 与上游 Attic 缓存对不上就得本地跑
+      `overlays.default`**：那个会拿我们的 nixpkgs 编内核，hash 与上游缓存对不上就得本地跑
       Clang+ThinLTO。同理**别加 `inputs.nixpkgs.follows`**（上游 README 明确要求，补丁是按特定内核
       版本准备的），并且用 `release` 分支而不是默认分支（前者永远指向 CI 已构建、缓存里有的提交）；
     - `boot.kernelParams = [ "amd_pstate=active" ]` 眼下是 **no-op**：6.18 的默认就是它（实测
@@ -446,27 +445,25 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       换内核时默认值可能变。别顺手加 `passive` / `guided` / `amd_prefcore=disable` /
       `amd_dynamic_epp=enable`，也别上 SCX / BORE / BMQ / RT 和常驻 performance governor：
       这台机器是日常 + 开发，EPP 交给 `power-profiles-daemon` 切；
-    - **attic 缓存在 daemon 侧不可达，这是最容易踩的一条**：`attic.xuyh0120.win` 在本机**只有走
-      clash 的 10800 才连得上、直连不通**，而 `cache.nixos.org` 与 `noctalia.cachix.org` 都是直连
-      可达的。`modules/home/shell.nix` 里 `nr`/`nb`/`nu`/`nup` 的代理**只作用于客户端**（flake 输入
-      抓取），**下载 store 路径的却是 `nix-daemon`** —— 它由 systemd 拉起、不继承任何 shell 变量
-      （`DefaultEnvironment` 为空、单元 `Environment=` 无 proxy、机器上没有 TUN 设备）。那句
-      「`sudo env` 够用」的前提正是「缓存直连可达」，attic 是第一个打破它的。所以**每次
-      `nu nix-cachyos-kernel` 之后必须重做一次预取**（`nix copy` 的下载在客户端做，代理才有效），
-      否则 `nr` 会退化成几小时的本地编译：
-
-      ```bash
-      OUT=$(nix eval --raw .#nixosConfigurations.nixos-adol.config.boot.kernelPackages.kernel)
-      sudo env https_proxy=http://127.0.0.1:10800 nix copy \
-        --from https://attic.xuyh0120.win/lantian \
-        --extra-trusted-public-keys "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc=" "$OUT"
-      ```
-
-      第一次要带 `--extra-trusted-public-keys`（此刻 `/etc/nix/nix.conf` 还不认识 lantian），这次
-      switch 之后它就是受信 key、以后不必再写。上游 README 那句「先切一次让缓存生效再开内核」
-      解决的是 daemon **认不认识**这个缓存，解决不了**连不连得上**。验证手法：`nix eval --raw …kernel.drvPath`
-      取 hash，`curl -x http://127.0.0.1:10800 -o /dev/null -w '%{http_code}'
-      https://attic.xuyh0120.win/lantian/<hash>.narinfo` 应为 200，直连同一 URL 则失败；
+    - **缓存挂哪个 substituter 是决定性的，别想当然**：作者自己的 `attic.xuyh0120.win` 在本机
+      **只有走 clash 的 10800 才连得上、直连不通**，而 `cache.xinux.uz`（上游 README 列的备用镜像）、
+      `cache.nixos.org`、`noctalia.cachix.org` 都**直连可达**。为什么这要紧：`modules/home/shell.nix`
+      里 `nr`/`nb`/`nu`/`nup` 的代理**只作用于客户端**（flake 输入抓取），而**下载 store 路径的是
+      `nix-daemon`** —— 它由 systemd 拉起、不继承任何 shell 变量（`DefaultEnvironment` 为空、
+      单元 `Environment=` 无 proxy、机器上没有 TUN）。挂 attic 就得每次内核升级 root + 代理手工
+      `nix copy` 预取，漏一次就退化成几小时的本地 Clang+ThinLTO 编译（这个坑踩过一次）；挂直连
+      可达的镜像则完全不用管。代价是镜像的 narinfo **重新签名**（整个文件只有 `cache.xinux.uz`
+      一条 `Sig`），信的是镜像维护者而非上游 CI 作者，上游 README 也声明不保证它的安全与可用性。
+      想换回 attic 只信一把 key，得先让 daemon 够得到它：开 TUN，或给 daemon 配代理（并把
+      `cache.nixos.org` / cachix 放进 `no_proxy`，否则 clash 没起时连它们一起断）。
+      排查手法：`nix eval --raw …kernel.drvPath` 取 hash，再分别**直连**和**走代理**测
+      `curl -o /dev/null -w '%{http_code}' <substituter>/<hash>.narinfo`，就能看出这个缓存到底谁
+      够得到。注意别用 `nix path-info --store <cache> <path> && echo ok` 在循环里判断 —— 它会误报
+      **没缓存**（这里被它骗过一次），**以 curl 的 HTTP 码为准**；
+    - `modules-shrunk` 那个 output **任何公共缓存里都不会有**（它依赖本机 `rootModules`，逐机不同），
+      别看到它未命中就以为缓存坏了。它只是纯 shell 后处理（`modules-closure.sh`：按 rootModules
+      挑模块 + 拷固件 + `depmod -a`），几分钟的活，**不是编译**；所以内核那几百 MB 下完之后，
+      本地很快就会结束。
     - 升级内核 = `nu nix-cachyos-kernel`（内核版本从此不跟 nixpkgs 26.05 走，而是跟上上游 `release`
       分支）。注意 `nup` 那个脚本只做 `--update-input nixpkgs`，**带不走内核**。out-of-tree 模块
       （zfs / nvidia / virtualbox / vmware）不用自己想办法：上游 `packages.nix` 已经对所有
