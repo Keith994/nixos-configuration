@@ -109,11 +109,19 @@ in
       gd = "git diff";
 
       # NixOS
-      # nr / nb / nup 走代理：它们会抓 flake 输入。nc 故意不加 —— 输入都在 store 里时它不需要
+      # nr / nb / nu / nup 走代理：它们会抓 flake 输入。nc 故意不加 —— 输入都在 store 里时它不需要
       # 网络，留一条 clash 没起时也能用的路（代理端口没人监听时，带代理的命令会直接连接失败）。
       nr = "sudo env ${proxyEnv} NO_PROXY=${noProxy} nixos-rebuild switch --flake ~/nix-config#nixos-adol";
       nb = "sudo env ${proxyEnv} NO_PROXY=${noProxy} nixos-rebuild build --flake ~/nix-config#nixos-adol";
       nc = "nix flake check ~/nix-config";
+
+      # 全量更新 flake.lock。和 nr/nb 不同，它**不用 sudo**：只写 flake.lock、抓输入，不碰 store。
+      # 不带参数时更新全部输入 —— 这正是 AGENTS.md 第 17 节说的会让 nixpkgs-unstable pin 移动的
+      # 那个动作，此前没有别名对应它（nup 那个脚本只动 nixpkgs）。--flake 指定仓库，所以任何目录
+      # 都能跑；位置参数仍是 input 名，`nu nix-cachyos-kernel` 可以只动内核 pin —— 但内核换了要
+      # 重做一次 attic 预取，见 modules/nixos/base.nix。
+      nu = "env ${proxyEnv} NO_PROXY=${noProxy} nix flake update --flake ~/nix-config";
+
       # nix-update 是 scripts/nix-update.sh 那个脚本：里面 `nix flake lock` 一行会继承这里的
       # 变量，而脚本内部的 `sudo nixos-rebuild` 拿不到（sudo 清环境）。
       nup = "env ${proxyEnv} NO_PROXY=${noProxy} nix-update";
