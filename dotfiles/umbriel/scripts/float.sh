@@ -3,7 +3,7 @@
 #
 # 语义：浮动 → 带缓冲地收回平铺（浏览器顺手拉回满宽）；平铺 → 浮到 60%x60% 并居中。
 # 两个方向都短暂覆盖 windows_move：进入浮动从中央附近随机点 ease-out 落位，
-# 回到平铺使用无随机的缩放收回；结束后恢复 animations.toml 的 spring + squash。
+# 回到平铺使用无随机的缩放收回；结束后恢复 animations.toml 的 spring + squash preset。
 
 set -euo pipefail
 
@@ -34,29 +34,31 @@ disable_float_animation() {
 }
 
 enable_float_animation() {
-  local shader="$1"
+  local effect="$1"
 
   cat >"$animation_override" <<EOF
 # 运行时临时文件：由 scripts/float.sh 生成并在动画结束后删除。
+# effect 只能写 preset 名：上游把 animation 段的 shader = "路径" 换成了 effect preset
+# 机制，预设本体声明在 animations.toml（常驻 include）里。
 [animation.windows_move]
 enabled = true
 duration_ms = 550
 curve = "easeout"
-shader = "shaders/$shader"
+effect = "$effect"
 EOF
   umbriel msg config-reload >/dev/null
   trap disable_float_animation EXIT HUP INT TERM
 }
 
 if [ "$floating" = "true" ]; then
-  enable_float_animation "tile-return.glsl"
+  enable_float_animation "tile-return"
 
   umbriel msg window-toggle-floating
   if [ -n "$is_browser" ]; then
     umbriel msg window-set-primary-extent:1.0
   fi
 else
-  enable_float_animation "random-float.glsl"
+  enable_float_animation "random-float"
 
   umbriel msg window-toggle-floating
   umbriel msg window-set-primary-extent:0.6

@@ -34,7 +34,8 @@ start-umbriel
 umbriel
 
 # 校验配置（不需要跑会话）——改了 dotfiles/umbriel/*.toml 之后先跑这个
-umbriel validate -c ~/.config/umbriel/config.toml
+# 注意子命令是 `config validate`：`umbriel validate ...` 只会打印 help（不会报错）。
+umbriel config validate -c ~/.config/umbriel/config.toml
 
 # 日志
 less ~/.cache/umbriel/umbriel.log
@@ -51,6 +52,7 @@ out-of-store 软链，见第 5 节），不用 rebuild、也不用重开会话�
 | niri（KDL） | umbriel（TOML） | 说明 |
 | --- | --- | --- |
 | `config.kdl` | `config.toml` + `animations.toml` | 常规 / 环境 / 工作区 / 外观 / 输入 / 布局 / 动画 / 热区；`windows_move` 单独放在 include 层供 Mod+F 临时覆盖 |
+| —（niri 的 shader 没有对应物） | `shaders/*.glsl` + 两个 toml 里的 `[effects.preset.*]` | 自定义开/关/移动动画。上游现在只认 effect preset：先声明 preset、再在 animation 段里按名字 `effect = "…"` 选中，见第 6 节 |
 | `monitors.kdl` | `outputs.toml` | 连接器名和模式逐个搬 |
 | `keys.kdl` | `keybinds.toml` | **全量**翻译（见第 3 节第 2 条） |
 | `rules.kdl` + `noctalia.kdl` + `layouts.kdl` 的 `layer-rule` | `rules.toml` | 窗口规则 + 图层规则 |
@@ -204,15 +206,17 @@ out-of-store 软链，见第 5 节），不用 rebuild、也不用重开会话�
 | --- | --- |
 | `satty-last.sh` | 没改逻辑，只改了注释里的会话名。它只读 `~/Pictures/Screenshots`，不碰合成器 IPC |
 | `lock.sh` | `niri msg action do-screen-transition` 去掉（umbriel 没有过渡动画动作）、`power-off-monitors` → `umbriel msg dpms-off`，锁屏仍是 `noctalia msg session lock` |
-| `float.sh` | 使用 Umbriel IPC 切换浮动；进入浮动用 `random-float.glsl` 随机落位，回到平铺用 `tile-return.glsl` 缩放收回，结束后恢复全局 `windows_move` 配置 |
+| `float.sh` | 使用 Umbriel IPC 切换浮动；进入浮动用 `random-float` preset 随机落位，回到平铺用 `tile-return` preset 缩放收回，结束后恢复全局 `windows_move`（`squash` preset） |
 | `switch.sh` | 同上换 IPC；窗口 id 两边都是 ext-foreign-toplevel 的字符串标识 |
 
 `float.sh` 在 Mod+F 双向切换期间生成被忽略的 `float-animation.toml`，把 `windows_move`
-临时改成 550ms `easeout`：平铺 → 浮动使用随机位移 shader，浮动 → 平铺使用缩放收回 shader；
-结束后删除该文件并 reload，恢复 `animations.toml` 里的 spring + squash。基础配置必须放在
-include 层，因为 Umbriel 的主配置值会压过所有 include；临时文件位于 optional include 的末尾，
-才能真正覆盖它。`Mod+F` 关闭了按键重复，并用运行时锁防止并发脚本互相提前清理覆盖。
-随机起点约在屏幕中心横向 ±12%、纵向 ±9% 的范围内，最终坐标仍由 `window-center` 管理。
+临时改成 550ms `easeout`：平铺 → 浮动选中 `effect = "random-float"`，浮动 → 平铺选中
+`effect = "tile-return"`；结束后删除该文件并 reload，恢复 `animations.toml` 里的 spring + `squash`。
+基础配置必须放在 include 层，因为 Umbriel 的主配置值会压过所有 include；临时文件位于 optional
+include 的末尾，才能真正覆盖它。临时文件里**只能写 preset 名**（preset 本体声明在常驻的
+`animations.toml` 里，主配置和 include 都能选中）。`Mod+F` 关闭了按键重复，并用运行时锁防止
+并发脚本互相提前清理覆盖。随机起点约在屏幕中心横向 ±12%、纵向 ±9% 的范围内，最终坐标仍由
+`window-center` 管理。
 
 注意：umbriel 的 `umbriel windows --json` **只报已映射（mapped）的窗口**，
 而 `switch.sh` 原本在 niri 下也只能看到 niri 报的窗口；托盘里藏起来的窗口两边都找不到。
@@ -257,8 +261,10 @@ community_ids = [ "telegram", "yazi" ]
 
 ## 6. 其他
 
-- 上游是活跃开发中的项目，**键名会变**。改完先 `umbriel validate -c ~/.config/umbriel/config.toml`，
-  它在不跑合成器的情况下就能报错（错误面板也会在会话里显示，最多列 6 条）。
+- 上游是活跃开发中的项目，**键名会变**。改完先 `umbriel config validate -c ~/.config/umbriel/config.toml`，
+  它在不跑合成器的情况下就能报错（错误面板也会在会话里显示，最多列 6 条）。子命令是
+  `config validate`：`umbriel validate …` 只会打印 help、**不会**报错，别被它骗过去。
+  退出码语义：**warning 也算 invalid（exit 1）**，所以「0 warning」才是真正干净的状态。
 - **上游把「宽 / 高」这一套词换成了「extent」（primary / secondary）**，旧名字全部变成
   `unknown key` / `unknown action`（validate 会打一堆 warning 并以 exit 1 结束，但配置其实还能跑）。
   对照表（改完现在是 0 warning）：
@@ -275,7 +281,34 @@ community_ids = [ "telegram", "yazi" ]
 
   判据的两处来源：`umbriel msg --help`（动作全表）和包里自带的参考配置
   `/nix/store/*-umbriel-0.1.0/share/umbriel/config.toml`（它自己 validate 是 clean 的）；
-  拿不准的键名可以丢进一份临时 toml 里 `umbriel validate` 试，它会把不认识的键逐条点名。
+  拿不准的键名可以丢进一份临时 toml 里 `umbriel config validate` 试，它会把不认识的键逐条点名。
+- **上游把 animation 段的 `shader = "路径"` 换成了 effect preset 机制**（rev 987 → 1167 之间的改名，
+  08 号那次全量 `nu` 带进来的）。旧写法现在是 `unknown key animation.windows_in.shader`，
+  validate 直接 `configuration invalid`，**自定义开关/移动动画全部静默失效**（合成器照跑，但
+  `umbriel effects` 的 Presets 表是空的）。现在的写法：
+
+  ```toml
+  # 1) 声明预设：shader 的相对路径按**声明它的那个文件**解析
+  [effects.preset.glide]
+  kind = "animation"
+  shader = "shaders/glide.glsl"
+
+  # 2) 按名字选中（windows_in / windows_out / windows_move / windows_resize … 都是这个键）
+  [animation.windows_in]
+  effect = "glide"
+  ```
+
+  本仓库的落点：`glide` / `pop-drop` 声明在 `config.toml`（选中它的窗口动画就在同一个文件里），
+  `squash` / `random-float` / `tile-return` 声明在 `animations.toml`（`float.sh` 的临时配置只覆盖
+  `effect` 值，preset 本体必须来自常驻 include）；`float.sh` 现在传的是 preset 名而不是文件名。
+  动画 shader 的接口**没变**（`vec4 animation(vec2 uv)` + `umbriel_sample()` /
+  `umbriel_clamped_progress` / `umbriel_size` / `umbriel_random_seed`），所以 `shaders/*.glsl`
+  本身一行都不用改。
+  判据：`umbriel effects` 里每个 preset 的 STATE —— `compiled` = 正在被选中且编译成功，
+  `unreferenced` = 声明了但当前没被任何 animation 段选中；改动前这张表整个是空的。
+- `duration_ms` 别和 spring 曲线一起写：`curve = "spring:…"` 自带长度，写了只换来一条
+  `has no effect` warning（而 warning 即 exit 1）。要固定时长就用 `easeout` 这类曲线，
+  或者干脆不写 `duration_ms`（`animations.toml` 和 `config.toml` 的 `windows_in` 现在就是这种）。
 - 注意 `default_scrolling_extent*` 只在 **scrolling** 布局里生效，而 `[layout] mode` 现在是
   `"dwindle"`（见第 3.2 节那张表），所以那几条终端列宽规则要 `Mod+D` 切到 scrolling 才看得到效果。
 - `dotfiles/umbriel/machine-custom.toml` 是可选的（`[include.optional]`），缺文件**不报错**；

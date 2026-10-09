@@ -1,7 +1,25 @@
 # windows_move 单独放在 include 中，让 scripts/float.sh 生成的可选配置能在
 # Mod+F 的两种切换期间临时覆盖它；主配置本身的值会压过所有 include，不能放回那里。
+#
+# 三个预设也声明在这里，而不是放进 float.sh 生成的临时文件：那个临时配置只覆盖
+# `animation.windows_move.effect` 这一个值，preset 本体必须来自常驻的 include
+# （preset 定义是全局的，主配置和 include 都能选中它们）。
+[effects.preset.squash]
+kind = "animation"
+shader = "shaders/squash.glsl"
+
+# Mod+F 平铺 → 浮动：从中央附近随机点落位。
+[effects.preset.random-float]
+kind = "animation"
+shader = "shaders/random-float.glsl"
+
+# Mod+F 浮动 → 平铺：无随机的缩放收回。
+[effects.preset.tile-return]
+kind = "animation"
+shader = "shaders/tile-return.glsl"
+
+# duration_ms 不写：spring 曲线自带长度（写了 validate 会出 warning，warning 即 exit 1）。
 [animation.windows_move]
 enabled = true
-duration_ms = 350
 curve = "spring:0.88,700"
-shader = "shaders/squash.glsl"
+effect = "squash"

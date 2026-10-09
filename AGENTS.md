@@ -345,7 +345,11 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
     - 输入 URL 用 `git+https://` 而不是 `github:`（后者走 `api.github.com`，未认证 60 次/小时的限额一满
       `nix flake lock` 就 403）；
     - 配置是 `dotfiles/umbriel/*.toml`（从 niri 的 KDL 逐条翻译，差异清单在 `dotfiles/umbriel/README.md`），
-      键名随上游版本变，改完先 `umbriel validate -c ~/.config/umbriel/config.toml`；
+      键名随上游版本变，改完先 `umbriel config validate -c ~/.config/umbriel/config.toml`（子命令是
+      `config validate`，`umbriel validate` 只打印 help；**warning 也算 exit 1**，目标状态是 0 warning）；
+      已经踩过两次改名：`width/height` → `extent`（`e08cc76`）、animation 段的 `shader = "路径"`
+      → `[effects.preset.*]` + `effect = "名字"`（`82b25e0` 那次全量 `nu` 带进来，症状是自定义动画
+      静默失效、`umbriel effects` 的 Presets 表为空；迁移写法见 README 第 6 节）；
     - `modules/home/umbriel.nix` 刻意不 import 上游 `homeModules.default`：`programs.umbriel.settings` 只能写
       单文件、挡不住 `[include]` 引用的同目录文件，而且它会把 umbriel 再装进 `home.packages`。
 16. 光标主题统一成 `Bibata-Modern-Ice`、尺寸 24，**四处字面量必须一致**：
