@@ -184,7 +184,7 @@ curve = "easeout"
 # 改成「先声明 effect preset、再按名字选中」（和它自带 effects/animation/*/effect.toml 同一套）。
 # preset 里的 shader 相对路径按**声明它的这个文件**解析，所以 "shaders/…" 仍落在 dotfiles/umbriel/ 下。
 # 接口没变：动画 shader 还是 `vec4 animation(vec2 uv)` + umbriel_sample/umbriel_clamped_progress 那套。
-[effects.preset.glide]
+[effects.preset.windowsin]
 kind = "animation"
 shader = "shaders/glide.glsl"
 
@@ -196,10 +196,11 @@ shader = "shaders/pop-drop.glsl"
 # 注意 duration_ms 不写：spring 曲线自带长度，写了会被 validate 判成 warning（而 warning 即 exit 1）。
 [animation.windows_in]
 enabled = true
-curve = "spring:0.82,600"
+curve = "easein"
 style = "popin"
 scale = 0.88
-effect = "glide"
+duration_ms = 300
+effect = "windowsin"
 
 # 关闭：不要回弹，干净快速消失
 [animation.windows_out]

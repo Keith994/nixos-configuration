@@ -35,6 +35,7 @@ disable_float_animation() {
 
 enable_float_animation() {
   local effect="$1"
+  local ease="$2"
 
   cat >"$animation_override" <<EOF
 # 运行时临时文件：由 scripts/float.sh 生成并在动画结束后删除。
@@ -42,8 +43,8 @@ enable_float_animation() {
 # 机制，预设本体声明在 animations.toml（常驻 include）里。
 [animation.windows_move]
 enabled = true
-duration_ms = 550
-curve = "easeout"
+duration_ms = 350
+curve = "$ease"
 effect = "$effect"
 EOF
   umbriel msg config-reload >/dev/null
@@ -51,19 +52,20 @@ EOF
 }
 
 if [ "$floating" = "true" ]; then
-  enable_float_animation "tile-return"
+  enable_float_animation "tile-return" "easein"
 
   umbriel msg window-toggle-floating
   if [ -n "$is_browser" ]; then
     umbriel msg window-set-primary-extent:1.0
   fi
 else
-  enable_float_animation "random-float"
+  enable_float_animation "random-float" "easeout"
 
   umbriel msg window-toggle-floating
-  umbriel msg window-set-primary-extent:0.6
-  umbriel msg window-set-secondary-extent:0.6
   umbriel msg window-center
+  # umbriel msg window-set-primary-extent:0.8
+  # umbriel msg window-set-secondary-extent:0.8
+
 fi
 
 # 等专用动画完成再恢复常规 windows_move 配置。
