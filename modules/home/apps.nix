@@ -22,6 +22,19 @@
     # org.telegram.desktop；niri 里 Mod+T 走 scripts/switch.sh 聚焦/启动它。
     telegram-desktop
 
+    # sing-box 的图形壳（GUI.for.SingBox，Vue3 + Wails/WebKitGTK）。四点要注意：
+    # 1) **包必须取 unstable**（跟 wechat / clash-verge 同一套姿势）：26.05 里 pin 的是
+    #    1.23.2，而上游已经把 `v1.23.2` 这个 tag 删了（`git/ref/tags/v1.23.2` → 404），
+    #    fetchFromGitHub 永久失败，rebuild 会停在 "cannot download source from any mirror"。
+    #    unstable 现在是 1.27.0，tag 还在。
+    # 2) nixpkgs 这个包只给壳，sing-box 内核由 GUI 运行时自己下载到
+    #    ~/.config/GUI.for.SingBox/（上游给 Linux 打了 XDG 路径补丁，数据/内核都落在
+    #    配置目录而不是 store），所以第一次启动需要能连上 GitHub 拉内核。
+    # 3) 它不在 cache.nixos.org 上（meta.hydraPlatforms = [ ]），首次 rebuild 要本地编
+    #    pnpm 前端 + Go/wails，很慢（是编译，不是下载，别指望换镜像能加速）。
+    # 4) GTK/WebKit 原生 Wayland，不需要额外包装参数。
+    pkgsUnstable.gui-for-singbox
+
     # wechat 不在这里：它要用 unstable 的包、还得单独塞 QT_IM_MODULE（不塞就一个中文都
     # 打不进去），见 modules/home/wechat.nix。
   ];

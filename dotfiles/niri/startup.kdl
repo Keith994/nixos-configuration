@@ -9,5 +9,5 @@ spawn-sh-at-startup "fcitx5 -r -d"
 // 启动的是 wrapper 而不是 noctalia：wrapper 里单独注入了 clash-verge 的 mixed-port（10800），
 // 让 noctalia 自己的天气 / 壁纸请求走代理，而 niri 的 environment 保持干净。见 modules/home/noctalia.nix
 spawn-at-startup "noctalia-proxy"
-spawn-at-startup "clash-verge"
+spawn-at-startup "GUI.for.SingBox"
 spawn-sh-at-startup "foot --server"
