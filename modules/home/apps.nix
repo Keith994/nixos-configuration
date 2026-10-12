@@ -37,5 +37,11 @@
 
     # wechat 不在这里：它要用 unstable 的包、还得单独塞 QT_IM_MODULE（不塞就一个中文都
     # 打不进去），见 modules/home/wechat.nix。
+   
+    # LibreOffice：nixpkgs 的 `libreoffice` 在 26.05 上其实是 still 线（25.8.5.2），
+    # 这里显式写 fresh（26.2.1.2）拿新版。选它的三点理由：不是 unfree（不用动 base.nix
+    # 白名单）、cache.nixos.org 有缓存（vldgyhn7… 实测 200）、GTK3 原生 Wayland，
+    # fcitx5 走 GTK 输入模块最省心。langs 里已含 zh-CN，中文界面自带，不需要 langpack。
+    libreoffice-fresh
   ];
 }
