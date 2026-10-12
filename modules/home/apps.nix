@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, pkgsUnstable, ... }:
 
 {
   # 图形界面应用：没有 programs.* 模块的、也不需要额外包装参数的放这里。
@@ -10,7 +10,7 @@
     feishu
 
     # Emacs 同时提供 emacsclient，供 niri 的编辑器快捷键调用。
-    emacs
+    pkgsUnstable.emacs-pgtk
 
     # Flutter/GTK 写的，原生 Wayland，不需要额外包装参数；可执行文件名是 localsend_app。
     # 局域网收文件要在 base.nix 放行 53317（TCP+UDP），否则只能发不能收。
