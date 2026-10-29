@@ -23,6 +23,43 @@ local function extend_or_override(config, custom, ...)
   return config
 end
 
+-- JDK 由 home-manager 提供（modules/home/devtools.nix 里的 javaJdk + JAVA_HOME）。
+-- NixOS 上没有 /usr/lib/jvm 这种发行版约定路径，也没有 jenv / sdkman，
+-- 所以这里一律从 PATH 和 $JAVA_HOME 推导，**不写死 store 路径**：
+-- store 路径进 dotfiles 会在每次 nix flake update 之后产生一行无意义的 diff。
+local function java_exe()
+  local exe = vim.fn.exepath("java")
+  return (exe ~= "" and exe) or "java"
+end
+
+-- jdtls 的 java.configuration.runtimes：从 $JAVA_HOME/release 的 JAVA_VERSION 推出执行环境名，
+-- 这样在 devtools.nix 里换 JDK 版本（jdk21 → jdk17 / jdk8），这个文件一行都不用改。
+-- 需要多版本并存时也别往 home.packages 里堆 JDK：home-manager 的 home.path 是
+-- buildEnv（不忽略冲突），两个 JDK 会在 bin/java 上撞车直接构建失败 ——
+-- 改用 direnv + 项目内 devShell，每个项目自己选。
+local function java_runtimes()
+  local home = vim.env.JAVA_HOME
+  if not home or home == "" then
+    return {}
+  end
+  local f = io.open(home .. "/release", "r")
+  if not f then
+    return {}
+  end
+  local raw = f:read("*a"):match('JAVA_VERSION="([^"]+)"')
+  f:close()
+  -- JDK 8 的 release 写的是 "1.8.0_xxx"，执行环境名是 JavaSE-1.8；9 及以后才是 JavaSE-<major>
+  local feature = raw and (raw:match("^1%.%d+") or raw:match("^%d+"))
+  if not feature then
+    return {}
+  end
+  return { {
+    name = "JavaSE-" .. feature,
+    path = home,
+    default = true,
+  } }
+end
+
 return {
   -- Add java to treesitter.
   {
@@ -85,14 +122,13 @@ return {
       local project_name = vim.fn.fnamemodify(root_dir, ":p:h:t")
       local workspace_dir = vim.fn.expand("$HOME/.cache/jdtls/" .. project_name)
       local cmd = {
-        "/usr/lib/jvm/java-21-openjdk/bin/java",
+        java_exe(),
         "-Declipse.application=org.eclipse.jdt.ls.core.id1",
         "-Dosgi.bundles.defaultStartLevel=4",
         "-Declipse.product=org.eclipse.jdt.ls.core.product",
         -- "-Dlog:disable",
         -- "-Djdt.ls.debug=false",
         "-Dlombok.disableConfig=true",
-        "-javaagent:" .. vim.fn.expand("$MASON/share/jdtls/lombok.jar"),
         "-Dsun.zip.disableMemoryMapping=true",
         "-Xms100m",          -- 初始堆内存提升
         "-Xmx3g",            -- 最大堆内存提升
@@ -120,6 +156,15 @@ return {
         "-data",
         workspace_dir,
       }
+
+      -- lombok.jar 只在 mason 真装好 jdtls 之后才存在：缺文件时 JVM 会以
+      -- "Error opening zip file or JAR manifest missing" 硬失败，比不带 lombok 更糟，
+      -- 所以先 stat 再塞。插在第 2 位（紧跟 java 可执行文件）——
+      -- -javaagent 是 JVM 参数，必须排在 -jar 之前。
+      local lombok_jar = vim.fn.expand("$MASON/share/jdtls/lombok.jar")
+      if vim.uv.fs_stat(lombok_jar) then
+        table.insert(cmd, 2, "-javaagent:" .. lombok_jar)
+      end
 
       local bundles = vim.fn.glob(vim.fn.expand("$MASON/share/java-debug-adapter/com.microsoft.java.debug.plugin.jar"),
         false, true)
@@ -181,21 +226,7 @@ return {
               maven = {
                 userSettings = "none",
               },
-              runtimes = {
-                {
-                  name = "JavaSE-11",
-                  path = "~/.jenv/jvm/jdk-11.0.9.1+1/",
-                  default = true,
-                },
-                {
-                  name = "JavaSE-17",
-                  path = "/usr/lib/jvm/java-17-openjdk/",
-                },
-                {
-                  name = "JavaSE-21",
-                  path = "/usr/lib/jvm/java-21-openjdk/",
-                },
-              },
+              runtimes = java_runtimes(),
             },
             diagnostic = {
               refreshAfterSave = false,
@@ -388,7 +419,7 @@ return {
       },
     },
     opts = {
-      java_cmd = "/usr/lib/jvm/java-21-openjdk/bin/java",
+      java_cmd = java_exe(),
       exploded_ls_jar_data = true,
     },
   },
