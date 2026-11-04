@@ -69,7 +69,8 @@
     │       ├── nix.lua      # Nix配置
     │       ├── json.lua     # JSON配置
     │       ├── xml.lua      # XML配置
-    │       └── markdown.lua # Markdown配置
+    │       ├── markdown.lua # Markdown配置
+    │       └── vue.lua     # Vue SFC + TypeScript + Tailwind（vtsls 挂 @vue/typescript-plugin）
     ├── util/                 # 工具函数
     │   ├── init.lua         # 工具函数初始化
     │   ├── icons.lua        # 图标配置

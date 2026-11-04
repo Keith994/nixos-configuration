@@ -92,8 +92,22 @@ return {
             },
           },
         },
-        ensure_installed = { "delve", "gopls", "gomodifytags", "gofumpt", "gotests", "goimports", "iferr", "impl" }
       }
+      -- ensure_installed 必须**追加**，不能留在 ret 里交给 extend_tbl：
+      -- 后者底层是 vim.tbl_deep_extend("force")，对数组是按下标覆盖，
+      -- 会冲掉别的 lang 文件已经塞进去的项。详见 lang/java.lua 的注释。
+      -- 这批 Go 工具走的是 mason 的 golang/npm manager（proxy.golang.org），
+      -- 不是 GitHub Releases，所以本机装得下来，来源不动、只修合并方式。
+      opts.ensure_installed = utils.list_insert_unique(opts.ensure_installed or {}, {
+        "delve",
+        "gopls",
+        "gomodifytags",
+        "gofumpt",
+        "gotests",
+        "goimports",
+        "iferr",
+        "impl",
+      })
       return utils.extend_tbl(opts, ret)
     end,
   },

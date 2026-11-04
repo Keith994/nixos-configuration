@@ -66,14 +66,14 @@ nixfmt <file.nix>
 
 | 文件 | 作用 |
 | --- | --- |
-| `base.nix` | networkmanager、时区、flakes 实验特性、zram + `vm.swappiness`（唯一 swap，见第 8 节第 18 条）、git/neovim、`allowUnfreePredicate`(google-chrome / obsidian)；Cachix + 备用镜像 substituter（noctalia 与 CachyOS 内核，后者见第 8 节第 21 条） |
+| `base.nix` | networkmanager、时区、flakes 实验特性、zram + `vm.swappiness`（唯一 swap，见第 8 节第 18 条）、git/neovim、`allowUnfreePredicate`(google-chrome / obsidian)、`permittedInsecurePackages`(pnpm-10.34.0，不放行整个 flake 求值失败，见第 8 节第 24 条)；Cachix + 备用镜像 substituter（noctalia 与 CachyOS 内核，后者见第 8 节第 21 条） |
 | `kernel.nix` | CachyOS 内核：`overlays.pinned` + `linuxPackages-cachyos-latest-lto-zen4` + `boot.kernelParams = [ "amd_pstate=active" ]`。**不**替换本仓库 nixpkgs；内核产物走备用镜像缓存，见第 8 节第 21 条 |
 | `ssh.nix` | openssh：密码登录开，root 登录关 |
 | `shell.nix` | 系统层启用 zsh，并把普通用户 shell 设为 zsh（不影响 root） |
 | `fonts.nix` | 字体包都在这：maple-mono.NF-CN（拉丁/终端）、lxgw-wenkai（中文）、nerd-fonts.jetbrains-mono、nerd-fonts.symbols-only。fonts.conf 里点名的 family 必须能在这些包里找到（见第 8 节第 11 条） |
 | `icons.nix` | 图标 / 光标主题包：papirus、adwaita（托盘与 symbolic 图标）、`bibata-cursors`（光标本体，装在 system 级是为了 greeter 用户也解析得到，见第 8 节第 16 条）、glib/gsettings-desktop-schemas |
 | `compat.nix` | `programs.nix-ld`，用于跑非 Nix 的动态链接二进制 |
-| `niri.nix` | `programs.niri` + xwayland-satellite + ozone Wayland 环境变量 |
+| `niri.nix` | `programs.niri` + xwayland-satellite + ozone Wayland 环境变量；屏幕共享改走 `xdg.portal.wlr`（nixpkgs 模块默认给的是 portal-gnome + niri 的 Mutter ScreenCast 路径，飞书那类消费端格式协商不上，见第 8 节第 22 条） |
 | `umbriel.nix` | `inputs.umbriel` 的 `programs.umbriel`：装包 + 注册一个 `Name=Umbriel` 的 wayland 会话 + portal（纯增量，默认会话仍是 niri，见第 8 节第 15 条） |
 | `noctalia.nix` | noctalia shell 需要的系统服务：蓝牙、upower、power-profiles-daemon（wifi 在 base.nix） |
 | `greetd.nix` | noctalia-greeter：greetd + `greeter.toml`（tmpfiles）+ AccountsService/polkit（见第 8 节第 8 条） |
@@ -101,7 +101,7 @@ nixfmt <file.nix>
 | `umbriel.nix` | `~/.config/umbriel` → `dotfiles/umbriel` 整目录 out-of-store 软链（noctalia 会写 `noctalia.toml`）；刻意不 import 上游 `homeModules.default`（见第 8 节第 15 条） |
 | `noctalia.nix` | `inputs.noctalia` 的 `programs.noctalia` 模块 + `dotfiles/noctalia/config.toml`（构建期 validate，见第 8 节第 14 条） |
 | `rime.nix` | 见第 6 节「Rime 特例」 |
-| `devtools.nix` | go / rustc / cargo / nodejs / yarn / lazygit / lazydocker / trash-cli / tree-sitter 等 |
+| `devtools.nix` | go / rustc / cargo / nodejs（24.x）/ yarn / **pnpm_10** / lazygit / lazydocker / trash-cli / tree-sitter 等。pnpm 刻意钉 10 而不是默认的 11：外部 pnpm 工程的锁文件多是 `lockfileVersion 9.0`，11 会改写它（10 被 nixpkgs 标成 insecure，放行写在 `base.nix`，见第 8 节第 24 条）。Java 一组：`javaJdk`(jdk21) + `JAVA_HOME`、maven、gradle，外加 **`jdt-language-server`**（nvim 的 jdtls 本体，经 `JDTLS_HOME` 暴露）和 **`google-java-format`**（conform 用），后两个为什么不走 mason 见第 8 节第 23 条 |
 | `edge.nix` | 容器 / k8s 一组：`programs.k9s`（refreshRate 放宽到 5s + 鼠标滚轮）、HM 的 `services.podman`（**只做 rootless**，不碰 docker socket；`/etc/subuid` 与 setuid `newuidmap` 本机已具备）、`helm` / `kubectl` / `kubectl-convert` / `kubectx`（HM 没有 `programs.helm` / `programs.kubectl`，只能装包） |
 | `iot.nix` | 物联网 / 串口 / MQTT 一组：`mqttui`、`mosquitto`（只要客户端，broker 没在跑）、`mbpoll`、`picocom`（keith 不在 `dialout` 组，现在要 sudo）、`socat` |
 | `network.nix` | 网络排查一组：`nmap`（connect 扫描不需要特权）、`iperf3`（只当客户端，5201 没放行）、`grpcurl`。抓包那两个在系统层，见 `modules/nixos/packet-capture.nix` |
@@ -186,7 +186,8 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
 
 `modules/home/ai/deepseek-harness.nix` 用 `writeShellApplication` 包装 `dsh`：
 
-- 版本 **pin** 在 `@deepseek-ai/dsh@0.2.0-rc.2`（`npx --package=...`），升级 = 改这一行 + rebuild；
+- 版本 **pin** 在 `@deepseek-ai/dsh@0.2.1-rc.5`（`npx --package=...`；这是 npm 的 `latest`/`next` 标签，
+  `alpha` 标签是另一条更新的线）。升级 = 改这一行 + rebuild + **跟着升插件**（见下面陷阱 2）；
 - runner 用 `node --expose-internals` 启动由 `$(command -v dsh)` 解析出的真实入口；
 - 设置 `DSH_HOME = ${xdg.dataHome}/deepseek-harness`；
 - **node 由 fnm 提供，wrapper 不自己装 node**：`runtimeInputs` 里只有 `fnm`、`coreutils`、`pnpmOnly`、
@@ -218,7 +219,8 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
    `devtools.nix` 里的 `nodejs`（nixpkgs 24）跟 dsh 无关，别混；**把 `nodejs_26` 之类写进
    `runtimeInputs` 是无效的**（这么改过，rebuild 后照旧失败）；换 loader 版本也没用（把 0.2.0-rc.2 的
    `node-addon-require-builtin` 降到 0.1.6 仍报同一个错，说明 0.1.x 那个老 dsh 能跑纯粹是因为它没有
-   这段宿主拦截）。
+   这段宿主拦截）。顺带一提，`0.2.1-rc.5` 把这个 loader 提到了 `^0.1.9`（rc.2 是 `^0.1.6`）——
+   版本在动，但「只认官方 node」这个结论没变，wrapper 不用跟着改。
 2. **插件必须跟 runtime 版本对齐**（插件装在仓库外，`git status` 里看不到）。dsh 启动时按
    peerDependencies 逐个检查 bundle，不匹配就整包 skip：
 
@@ -228,12 +230,43 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
    ```
 
    09-30 那次 `0.1.5-rc.1 → 0.2.0-rc.2` 的 bump 就是这样把 09-15 装的一批插件全废掉的（它们 peer 指
-   `^0.1.5-rc.1`）。升/降 runtime 之后要跟着升插件，例如：
+   `^0.1.5-rc.1`）。升/降 runtime 之后要跟着升插件。与 `0.2.1-rc.5` 对齐的一组（2026-11 查证）：
 
    ```bash
-   dsh plugin --profile web add dsh-better-sidebar@0.24.1 dsh-codex-connect@0.2.0-alpha.2 \
-     dsh-cost-meter@1.8.11 dsh-dream-skin@10.5.0 dshmarket@1.66.8
+   dsh plugin --profile web add \
+     dsh-better-sidebar@0.28.2 dsh-codex-connect@0.2.0-alpha.11 dsh-context@0.80.2 \
+     dsh-cost-meter@1.9.51 dsh-dream-skin@11.3.0 dshmarket@1.73.9 \
+     @furongjun1999/dsh-memory@0.9.22 @linxin666/dsh-client-ui-skill-explorer@0.4.14 \
+     @liustack/modlens@3.27.2
+   # dsh-superpowers 走 git（github:icanfinish11/dsh_superpowers）、无 peer 约束，
+   # 不参与版本对齐；要刷新上游 skills 才需要重新 add 一次。
    ```
+
+   **别照抄上面的版本号，也别直接写 `@latest`** —— 每次升 runtime 都要重新查证。判断依据是插件自己的
+   `peerDependencies`，而不是它的版本号或发布时间：
+
+   ```bash
+   # 列出某个插件各版本对 dsh 子包的 peer 约束，挑一个覆盖你 runtime 的版本
+   curl -s https://registry.npmjs.org/dsh-better-sidebar \
+     | jq -r '.versions | to_entries[] | "\(.key)\t\(.value.peerDependencies["@deepseek-ai/dsh-agent"] // "-")"'
+   # runtime 侧实际带的 cordis / schemastery（插件也 peer 这些）
+   curl -s https://registry.npmjs.org/@deepseek-ai%2Fdsh/0.2.1-rc.5 \
+     | jq '.dependencies | with_entries(select(.key|test("cordis|schemastery")))'
+   ```
+
+   几个具体结论，省得下次重推：
+
+   - `0.2.1-rc.5` 带 `@deepseek-ai/cordis ~4.0.5`，正好是 `dsh-better-sidebar@0.28.x` 要的下限
+     （`^4.0.5`）。`0.2.0-rc.2` 只带 `~4.0.4`，所以 better-sidebar 0.28 在旧 runtime 上**装不上**，
+     这不是 peer 里 `dsh-agent` 那条的作用，别只盯着它看；
+   - `dsh-codex-connect` 的 peer 是**逐个 runtime 版本枚举**的白名单（`0.2.1-rc.3 || 0.2.1-rc.4 || …`），
+     不是范围。它的 npm `latest` 标签**长期落后于 `alpha` 标签**（`latest` = `0.2.0-alpha.10`，只枚举到
+     `0.2.1-rc.3`；`alpha` = `0.2.0-alpha.11` 才含 `rc.5`），所以这里必须写死 alpha 版本号，
+     写 `@latest` 会被判不兼容；
+   - `@linxin666/dsh-client-ui-skill-explorer` peer 的是**元包** `@deepseek-ai/dsh >= 0.2.1-rc.3`
+     （不是子包），它实际上是整套插件里的 runtime 下限来源之一；
+   - `react` / `react-dom` 那几条 peer 不参与判定（`dsh-context@0.53.2` 早就 peer `react ^18.3.1`
+     且一直正常加载），别为它去动 profile 的依赖。
 
    - 手工开的逐版本豁免记在 `$DSH_HOME/profiles/<profile>/compatibility.json`
      （`{"<包>@<版本>": ["<runtime 版本>"]}`）：它会让那次不兼容被静默放过，升级到真正兼容的版本后
@@ -242,6 +275,9 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
      `allowBuilds` 里。占位文字 `set this to true or false` 会让 pnpm 以 exit 1 结束 → dsh 判定这次
      plugin 操作失败（**哪怕包其实已经装好了**）；`node-pty: true` 是必需的，其它第三方脚本先给
      `false` 更安全（官方包消费者本来也不跑它们的 `prepare`/`postinstall`）；
+   - 同一个文件里的 `minimumReleaseAgeExclude` 是 pnpm 11 的「发布未满 N 分钟不许装」白名单，plugin
+     manager 会把这次真正要装的 `<包>@<版本>` 追加进去。升插件后旧条目就成了死数据（留着无害），
+     但如果报「发布时间太新」而列表里没有对应条目，就是这一步没写成；
    - 改了 bundles（增删插件）**必须重启**该 profile 的 dsh 进程才生效，`patchReload: live` 只管 patch
      文件。
 
@@ -487,6 +523,162 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       `linuxPackages-*` 套了 `kernelModuleLLVMOverride`（LTO 内核编外部模块必需），连 vbox / vmware
       的 `makeFlags` 和 nvidia open 的补丁都补了；本机现在 `boot.extraModulePackages = [ ]`、
       `vmware.nix` 也没被 import，所以眼下无关。
+
+22. 屏幕共享 / 飞书「共享屏幕」（`modules/nixos/niri.nix`）：**选择框弹出来了、选完却什么都没共享出去**，
+    根因在合成器这侧的 PipeWire 格式集，不在飞书、也不在 portal 的偏好配置：
+    - 证据在 niri 自己的日志（`journalctl --user -b | grep -iE "mutter_screen_cast|pw_utils"`）：
+      `record_monitor` / `record_window` 都正常走到 `Connecting -> Paused` + `sending signal with <node id>`，
+      紧接着 `Paused -> Error("no more input formats")` 和 `pw error id=2 seq=18 res=-32`。
+      也就是说 portal 请求送到了 niri、流也建起来了、node id 也发给客户端了，是**格式协商**阶段判死的
+      （`-32` = EPIPE；"no more input formats" 是 libpipewire 在客户端侧求 EnumFormat 交集为空时的报错，
+      不是 daemon 崩了）。两种源都失败，所以跟飞书版本、跟"共享窗口还是整屏"都无关；
+    - 为什么交集为空：niri 的 `org.gnome.Mutter.ScreenCast` 路径建出来的流**只有 DMA-BUF** 一种 memtype，
+      EnumFormat 只给 `BGRx` + modifier `DRM_FORMAT_MOD_INVALID`（72057594037927935）；飞书内置的
+      Chromium 交不出能匹配的格式。上游把它归给 pipewire 的 DMA-BUF 协商 bug
+      （[niri#3145](https://github.com/niri-wm/niri/issues/3145) →
+      [pipewire#5353](https://gitlab.freedesktop.org/pipewire/pipewire/-/work_items/5353)），
+      并明确说"合成器提供 SHM 就能绕过"；
+    - 修法：让 ScreenCast 走 `xdg-desktop-portal-wlr`（`xdg.portal.wlr.enable`）。它用 wlr-screencopy
+      （niri 实现了 `zwlr_screencopy_manager_v1`，且支持 shm buffer），流里 DMA-BUF / SHM 都给，所以
+      协商得成。接线只改**接口级**的偏好键
+      `xdg.portal.config.niri."org.freedesktop.impl.portal.ScreenCast" = "wlr"`（按 `portals.conf(5)`，
+      接口级的键优先于 `default`）。**不要**去 `mkForce xdg.portal.extraPortals`：它是列表合并，
+      mkForce 会连带冲掉 umbriel 模块 `+=` 进来的 `xdg-desktop-portal-umbriel`；也**不要**改
+      `config.niri.default = [ "gnome" "gtk" ]`（nixpkgs 的 `programs.niri` 模块写死的，动它会影响
+      Screenshot / FileChooser 等所有接口）。portal-gnome 照旧装着，照旧管 RemoteDesktop 等；
+    - 代价一：**没有窗口共享了**。xdpw 的窗口捕获要 `ext-image-copy-capture-v1`，niri 26.04 没实现
+      （`strings $(command -v niri) | grep ext_image_copy` 为空，只有 `zwlr_screencopy_*`），所以飞书里点
+      「共享窗口」会退化成整屏。原来那条 Mutter 路径确实支持 `record_window`，但对飞书本来也是失败的，
+      所以不算倒退。要窗口共享得等 niri 实现 ext-image-copy-capture；
+    - 代价二：**选择器换成 wmenu**（`chooser_type = "dmenu"` + `chooser_cmd`）。xdpw 自己没有 GUI，
+      不配 chooser 时（`chooser_type = "none"` 或 default 找不到 slurp/wmenu/wofi/rofi/bemenu/fuzzel）
+      会**随便挑一个输出**，本机常热插 HDMI 外接屏，挑错了在会议里没法补救，所以宁可多按一次回车。
+      `chooser_cmd` 用的是 wmenu 的 store 绝对路径（xdpw 是 user service，别指望 PATH）；
+      144Hz 屏想省 CPU 可以在 `settings.screencast` 里加 `max_fps = "30"`；
+    - 排查手法：改完先看 `cat /etc/xdg/xdg-desktop-portal/niri-portals.conf` 里 ScreenCast 那行是不是 `wlr`，
+      再 `systemctl --user restart xdg-desktop-portal xdg-desktop-portal-wlr`（保险起见重开会话）。
+      共享时 `busctl --user list | grep impl.portal.desktop` 应出现
+      `org.freedesktop.impl.portal.desktop.wlr`，`journalctl --user -f | grep -i portal-wlr` 能看到
+      screencast 起停，而 niri 侧不该再出现 `no more input formats`。
+      注意 `xdg.portal.wlr.settings` 是**构建期**生成 ini 再用 `--config=` 传给 xdpw 的
+      （nixpkgs `config/xdg/portals/wlr.nix` 覆写了 user service 的 ExecStart），所以
+      `~/.config/xdg-desktop-portal-wlr/config` 和 `/etc/xdg/xdg-desktop-portal-wlr/` 都**不会**有文件，
+      别去那儿找配置。
+
+23. nvim 的 Java LSP（`dotfiles/nvim/lua/plugins/lang/java.lua`）：症状是打开 `.java` 弹
+    `Client jdtls quit with exit code 1 and signal 0`。这个提示**极度误导** —— 它只说子进程退了，
+    真正的原因埋在 `~/.local/state/nvim/lsp.log` 里的一行 stderr：
+    `Error: Unable to access jarfile .../mason/share/jdtls/plugins/org.eclipse.equinox.launcher.jar`。
+    2026-11 排查时是**四个 bug 叠在一起**，别只修一个：
+    - **没人在装 jdtls**：`mason.log` 全文只出现过 `lemminx`（成功 1 次）和 `codelldb`（133 次全败），
+      jdtls 零记录。因为 `java.lua` 只把它放进 `opts.servers`，而 `lsp.lua` 的
+      `mason-lspconfig.setup({ ensure_installed = {} })` 是写死的空表；
+    - **launcher jar 名写死且写错**：上游 `jdtls.py` 的 `find_equinox_launcher()` 是
+      「先试无版本名的 `org.eclipse.equinox.launcher.jar`（注释写明那是 *mason-registry packaging*），
+      再 glob `org.eclipse.equinox.launcher_*.jar`」。eclipse 官方 tarball（= nixpkgs 那份）里
+      **只有带版本号的**，写死无版本名必然失败。glob 里那个**下划线是关键**：实测 tarball 里还有
+      `org.eclipse.equinox.launcher.gtk.linux.{x86_64,aarch64}_*.jar` 和
+      `org.eclipse.equinox.launcher.cocoa.macosx.x86_64_*.jar` 三个平台 fragment，
+      写成 `org.eclipse.equinox.launcher*` 会把它们一起捞进来；
+    - **`ensure_installed` 数组合并互相冲掉**（最隐蔽的一个）：`utils.extend_tbl` 底层是
+      `vim.tbl_deep_extend("force")`，它对**数组是按下标覆盖而不是拼接**。7 个 lang 文件各写一份列表，
+      实测合并结果只剩 `{ "lemminx", "codelldb" }`（index 1 被 `xml.lua` 抢走、index 2 被 `rust.lua`
+      抢走），和 mason.log 完全对上 —— 所以「往 java.lua 的列表里加 jdtls」本身就是掷硬币。
+      正确写法是仓库里已有的 `utils.list_insert_unique(opts.ensure_installed, {...})`
+      （`vue.lua` / `markdown.lua` / `nushell.lua` 一直是对的）。修完实测 2 项 → **26 项**；
+    - **`-configuration <dir>` 对只读 store 不安全**：equinox 会往配置区写 `.manager/.fileTable.lock`，
+      而 nix 路线下那个目录在只读的 nix store 里。上游用的是 `-Dosgi.checkConfiguration=true` +
+      `-Dosgi.sharedConfiguration.area=<dir>` + `…area.readOnly=true` +
+      `-Dosgi.configuration.cascaded=true`，照抄。
+
+    **jdtls 本体走 nixpkgs，不走 mason**（`devtools.nix` 的 `jdt-language-server` +
+    `home.sessionVariables.JDTLS_HOME`；`java.lua` 按 `$JDTLS_HOME` → `$MASON/share/jdtls` 顺序探测，
+    mason 只当兜底）。理由**不是速度** —— 实测两边都慢（eclipse.org 约 17KB/s，同一时刻
+    cache.nixos.org 的一次 range 取样只有约 1.2KB/s）—— 而是**下载能不能活下来**：mason 在 nvim
+    退出时会 abort 安装，51MB 基本不可能在一次会话里下完（codelldb 那 133 次
+    "Installation was aborted" 就是这么攒的）；nix 归 nix-daemon 管，可续传、跨多次 `nr` 累积。
+    已核实 cache.nixos.org **有**这个产物（narinfo HTTP 200、nar.zst 约 49MB），且它 References 里的
+    openjdk-21.0.12.1 正是 `javaJdk` 在用的那个 store 路径，不会多下 JDK。
+    包名坑：nixpkgs 里叫 **`jdt-language-server`**，`nix eval nixpkgs#jdtls` 会报
+    "Did you mean one of gitls or natls?"。nixpkgs 那份的布局也和 mason 不同：
+    `$out/share/java/jdtls/{plugins,features,config_linux}`，config 目录叫 **`config_linux`**
+    （mason 可能改名成 `config`，所以两个都探），且**不含 lombok.jar**（上游 tarball 就不带，
+    `java.lua` 对它有 `fs_stat` 守卫，缺了静默不带）。
+
+    **mason 在本机的可用性边界**（决定哪些包别指望 mason）：直连 GitHub Releases **超时**
+    （实测 25s 收 0 字节），所有 `pkg:github/...` 的包都装不上 —— `codelldb`、`java-debug-adapter`、
+    `java-test`、`google-java-format`、`ruff` 都属此类；前三个已从 `ensure_installed` 摘掉，
+    `google-java-format` 改由 nixpkgs 提供。`download.eclipse.org` / `projectlombok.org` /
+    `registry.npmjs.org` / `pypi.org` / `proxy.golang.org` 可达，所以 jdtls 兜底、vtsls、
+    basedpyright、debugpy、Go 那批工具是能装的。clash 的混合端口是 **10800**（不是 7890），
+    要救 GitHub 那些包得给 nvim 配 `https_proxy`。
+
+    顺带两个同源坑：`mason-lspconfig.nvim` 已是 **v2**，`setup()` 只认 `ensure_installed` /
+    `automatic_enable`，**不再读 `handlers`** —— 所以 `lsp.lua` 里那段 handler（连带各 lang 文件的
+    `opts.servers` per-server 设置）一直是死代码；v2 的等价物是 `vim.lsp.config()` + `vim.lsp.enable()`。
+    同时 v2 默认 `automatic_enable = true`，会对每个 mason 已装的包调 `vim.lsp.enable()`，
+    所以必须 `automatic_enable = { exclude = { "jdtls" } }`，否则 mason 兜底装上 jdtls 后会和
+    nvim-jdtls 抢着起两个 client。`rust.lua` 里那个 `codelldb_installed` 也是同类假阳性：
+    `mason-registry.get_package()` 只查 registry 里**有没有这个包名**、不查装没装，
+    而且 `local x = pcall(f)` 只接到 ok —— 两个错叠加，等于把空路径喂给 `get_codelldb_adapter()`。
+
+    排查手法：`grep -o "Package(name=[a-z0-9_-]*)" ~/.local/state/nvim/mason.log | sort | uniq -c`
+    一眼看出 mason 到底**尝试过**哪些包；再用 headless nvim 把合并后的 opts 打出来，
+    就能抓到数组覆盖这类「静默丢配置」：
+
+    ```bash
+    nvim --headless -u ~/.config/nvim/init.lua -c 'lua vim.defer_fn(function()
+      local o = require("lazy.core.plugin").values(
+        require("lazy.core.config").spec.plugins["nvim-lspconfig"], "opts")
+      print(vim.inspect(o.ensure_installed)); vim.cmd("qa!")
+    end, 9000)'
+    ```
+
+    **修完之后又踩了两个坑，都是"路径明明存在却报没装"，一并记下来：**
+
+    - **`vim.fn.expand("$MASON/…")` 是个陷阱**。mason.nvim 只在
+      `mason-core/installer/InstallLocation.lua` 里设 `vim.env.MASON`，那是安装/卸载时才跑的代码，
+      **正常启动一次根本不会设**。而 `expand` 对未设置的变量做的是**空前缀替换**：
+      实测 `expand("$MASON/share/jdtls")` 返回 `"/share/jdtls"` —— 一个不存在、却长得像绝对路径的
+      字符串，`fs_stat` / `glob` 静默失败。更阴的是 `expand("$NOPE")`（不带后续路径）反而返回
+      字面量 `"$NOPE"`，两种行为不一致。另外 `vim.fn.glob("$MASON/…")` 是**双重错误** ——
+      `glob` 根本不展开环境变量（java.lua 里 java-test 那行就一直这么写着，所以 DAP/单测的
+      bundle 从来没被加载过）。正确做法是 `lua/util/init.lua` 的 `M.mason_root()`
+      （mason.settings 的 `install_root_dir` → `vim.env.MASON` → `stdpath("data").."/mason"`，
+      最后那个也是 `lang/vue.lua` 一直在用的写法），或者对具体包用
+      `require("mason-registry").get_package(x):get_install_path()`。
+      顺带：`get_package()` 只查 registry 里有没有这个**包名**、不查装没装，
+      要判断装没装必须 `:is_installed()`；而 `local x = pcall(f)` 只接到 ok，
+      里面 `return false` 也照样是真 —— `rust.lua` 的 `codelldb_installed` 两个错都占了。
+      `rust.lua` 里 `share/lldb/lib/liblldb.so` 这个路径也是错的，mason 实际装在
+      `packages/codelldb/extension/lldb/lib/liblldb.so`（`share/` 底下没有 lldb 目录），
+      所以一律用 `get_install_path()` 拼、别猜布局。
+    - **`{ a, b }` 里 a 为 nil 时 `ipairs` 会直接停**。`jdtls_home()` 原来写成
+      `{ vim.env.JDTLS_HOME, jdtls_from_path(), mason_dir }` 再 `ipairs` 遍历 ——
+      `JDTLS_HOME` 没设时第一项是 nil，表成了 `{ [1]=nil, [2]=… }`，
+      而 **ipairs 遇到第一个 nil 就停**（实测这种表 ipairs 产出 **0** 项），
+      后面两个候选压根不会被检查。`#t` 对带洞的表照样返回 3，所以也别指望用 `#` 判断。
+      修法是显式跳过 nil 再收集。**注意 `JDTLS_HOME` 是 `home.sessionVariables`，
+      `nr` 之后当前会话里仍然是空的**（要重开 shell / 重登桌面），所以这个洞必然被踩到；
+      好在 `~/.nix-profile/bin` 是原地更新的软链农场，`exepath("jdtls")` 当场就能命中，
+      顺着 realpath 走两层 dirname 就是 store 根 —— java.lua 就是靠这条兜住的，不必重启会话。
+
+    **两条来源实测都通**（2026-11）：nix 那份走 glob 拿到
+    `org.eclipse.equinox.launcher_1.7.100.v20251111-0406.jar`、config 目录是 `config_linux`、
+    **没有 lombok.jar**；mason 那份（1.63.0，比 nixpkgs 的 1.58.0 新）走无版本名的 literal、
+    config 目录叫 `config`、**带 lombok.jar**。所以**需要 lombok 注解支持就应该把 mason 排到前面**
+    （改 `jdtls_home()` 里 `add()` 的顺序即可）—— 当初定"nix 优先"是因为 mason 下不动，
+    后来 GitHub 可达了、mason 一次装齐 17 个包，这个前提已经变了。
+
+24. `pnpm_10` 被 nixpkgs 标成 **insecure**（一批 CVE），不放行会让整个 flake **求值失败**
+    （`error: Package ‘pnpm-10.34.0’ is marked as insecure`），连带 `nix eval` / `nr` / `nb` 全跑不动。
+    放行写在 `modules/nixos/base.nix` 的 `nixpkgs.config.permittedInsecurePackages`。
+    为什么宁可放行也不升到默认的 pnpm 11：`iot-edge-ui` 的锁文件是 `lockfileVersion 9.0`，
+    11 会把它重写成 10.0，在共享仓库里多一条无关 diff（详见 `devtools.nix` 注释）。
+    **别用 `NIXPKGS_ALLOW_INSECURE=1` 环境变量糊过去**：只对单次调用生效，换个 shell 就又炸，
+    而且 `nix-daemon` 根本不继承 shell 变量（同第 21 条那个坑）。
+    撤销放行的两条路：等 nixpkgs 清掉 pnpm 10 的 `knownVulnerabilities`，
+    或工程锁文件迁到 10.0 之后改用 pnpm 11 并删掉这一行。
 
 ## 9. 改动流程（checklist）
 

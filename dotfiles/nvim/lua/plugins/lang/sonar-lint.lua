@@ -28,10 +28,13 @@ return {
       "neovim/nvim-lspconfig",
       optional = true,
       opts = function(_, opts)
-        local ret = {
-          ensure_installed = { "sonarlint-language-server" }
-        }
-        return utils.extend_tbl(opts, ret)
+        -- 追加而不是 extend_tbl：后者对数组按下标覆盖，会冲掉别的 lang 文件的项。
+        -- 详见 lang/java.lua 的注释。（这个 spec 目前 enabled = false，
+        -- 但下面 mason-tool-installer 那个块已经是正确写法，两边保持一致。）
+        opts.ensure_installed = utils.list_insert_unique(opts.ensure_installed or {}, {
+          "sonarlint-language-server",
+        })
+        return opts
       end,
     },
     {

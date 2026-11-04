@@ -210,24 +210,29 @@ return {
         end,
       })
       vim.diagnostic.config(vim.deepcopy(opts.diagnostics))
-      local capabilities = require("blink.cmp").get_lsp_capabilities()
-      local servers = opts.servers
       local ensure_installed = opts.ensure_installed
       require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
 
+      -- mason-lspconfig **v2**（lazy-lock 里的 77e06f7）删掉了 v1 的 handlers 选项：
+      -- 它的 setup() 只认 ensure_installed 和 automatic_enable，压根不读 handlers。
+      -- 所以这里以前传的那个 handler 函数从来没被调用过一次，连带 opts.servers 里
+      -- 各 lang 文件写的 per-server 设置至今也是死的（gopls.lua 甚至没有任何
+      -- vim.lsp.enable，等于 gopls 一直没起来）。
+      -- v2 的等价写法是 vim.lsp.config(name, server) + vim.lsp.enable(name)：
+      -- lang/{rust,nix,nushell}.lua 已经自己调 enable 了。要不要把那批 servers 设置
+      -- 接回来是**另一件事**（会同时改变 gopls / lua_ls / basedpyright / ruff /
+      -- jsonls / nil_ls 的行为），别混进修 jdtls 的这次改动里。
       require("mason-lspconfig").setup({
+        -- 刻意留空：mason-lspconfig 的 ensure_installed 要的是 **lspconfig server 名**，
+        -- 而 opts.ensure_installed 里是 **mason 包名**（lang/json.lua 那种两套都写的更混），
+        -- 命名空间不一样，把同一份列表喂进来只会刷一堆 unknown package。
+        -- 安装这件事统一交给上面的 mason-tool-installer。
         ensure_installed = {},
-        handlers = {
-          function(server_name)
-            local server = servers[server_name] or {}
-            -- This handles overriding only values explicitly passed
-            -- by the server configuration above. Useful when disabling
-            -- certain features of an LSP (for example, turning off formatting for ts_ls)
-            server.capabilities = vim.tbl_deep_extend("force", {}, capabilities, server.capabilities or {})
-            -- vim.lsp.config(server)
-            require("lspconfig")[server_name].setup(server)
-          end,
-        },
+        -- jdtls 由 nvim-jdtls 用自定义 cmd 起（见 lang/java.lua：要往里塞 -Xmx、
+        -- lombok agent、debug bundles），不能让 mason-lspconfig 再 vim.lsp.enable("jdtls")
+        -- 一次 —— 否则打开一个 .java 会同时起两个 jdtls client 互相踩。
+        -- mason 只是 jdtls 的兜底来源（主路径是 nixpkgs，见 lang/java.lua 的 jdtls_home）。
+        automatic_enable = { exclude = { "jdtls" } },
       })
     end,
   },

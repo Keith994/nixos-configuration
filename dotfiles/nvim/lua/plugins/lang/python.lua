@@ -39,8 +39,18 @@ return {
             end,
           },
         },
-        ensure_installed = { "basedpyright", "debugpy", "ruff" },
       }
+      -- ensure_installed 必须**追加**，不能留在 ret 里交给 extend_tbl：
+      -- 后者对数组是按下标覆盖，会冲掉别的 lang 文件已经塞进去的项。
+      -- 详见 lang/java.lua 的注释。
+      -- basedpyright 走 npm、debugpy 走 pypi，本机都可达；
+      -- ruff 在 mason registry 里是 pkg:github/astral-sh/ruff（GitHub Releases，
+      -- 本机直连超时），装不上时 conform/nvim-lint 会自己跳过，先留着不删。
+      opts.ensure_installed = utils.list_insert_unique(opts.ensure_installed or {}, {
+        "basedpyright",
+        "debugpy",
+        "ruff",
+      })
       return utils.extend_tbl(opts, ret)
     end,
   },
@@ -76,7 +86,11 @@ return {
           local path = vim.fn.exepath("python")
           local debugpy = require("mason-registry").get_package("debugpy")
           if debugpy:is_installed() then
-            path = vim.fn.expand("$MASON/packages/debugpy")
+            -- 用 get_install_path() 而不是 expand("$MASON/packages/debugpy")：
+            -- $MASON 通常没设（mason.nvim 只在安装/卸载时才设它），expand 会把它
+            -- 替换成空 → "/packages/debugpy"。详见 util/init.lua 的 M.mason_root 注释。
+            -- 本机现在没装 debugpy，所以这条分支走不到 —— 但坑是一样的，一并修掉。
+            path = debugpy:get_install_path()
             if vim.fn.has("win32") == 1 then
               path = path .. "/venv/Scripts/python"
             else

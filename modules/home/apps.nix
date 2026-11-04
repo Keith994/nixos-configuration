@@ -8,6 +8,9 @@
     # ELECTRON_OZONE_PLATFORM_HINT=auto（modules/nixos/niri.nix），所以不用再包一层 wrapper。
     obsidian
     feishu
+    claude-code
+    opencode
+    vscode
 
     # Emacs 同时提供 emacsclient，供 niri 的编辑器快捷键调用。
     pkgsUnstable.emacs-pgtk

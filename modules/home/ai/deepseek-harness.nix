@@ -70,7 +70,7 @@ let
       # npx 与 runner 里的 node 都在这一个 fnm 上下文里解析，保证是同一个官方 node。
       exec fnm exec --using="$dsh_node" -- npx \
         --yes \
-        --package=@deepseek-ai/dsh@0.2.0-rc.2 \
+        --package=@deepseek-ai/dsh@0.2.1-rc.5 \
         -- ${dshRunner} "$@"
     '';
   };

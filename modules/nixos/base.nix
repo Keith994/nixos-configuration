@@ -74,5 +74,24 @@
       "google-chrome"
       "obsidian"
       "feishu"
+      "claude-code"
+      "opencode"
+      "vscode"
     ];
+
+  # pnpm 10 在 nixpkgs 里被标成 insecure（一批 CVE），不放行会**直接求值失败**：
+  #   error: Package ‘pnpm-10.34.0’ is marked as insecure
+  # 连带 `nix eval` / `nr` / `nb` 全部跑不动，所以必须显式放行。
+  #
+  # 为什么宁可放行也不升到默认的 pnpm 11：iot-edge-ui 是 pnpm workspace，锁文件是
+  # lockfileVersion 9.0（pnpm 9/10 写的格式），11 会把它升级重写成 10.0 ——
+  # 在共享仓库里就是一条无关的 diff。详见 modules/home/devtools.nix 里 pnpm_10 那段注释。
+  #
+  # 代价：这些 CVE 是真实存在的，放行等于自担风险（pnpm 只在本地开发时跑，
+  # 不是常驻服务，暴露面有限）。要撤销放行有两条路：
+  #   1) 等 nixpkgs 把 pnpm 10 的 knownVulnerabilities 清掉（补丁版本出来后自然会清）；
+  #   2) 工程锁文件迁到 10.0 之后改用 pnpm 11，然后把这一行删掉。
+  # 别用 NIXPKGS_ALLOW_INSECURE=1 环境变量糊过去：那只对单次调用生效，
+  # 换个人 / 换个 shell 就又炸，而且 nix-daemon 根本不继承 shell 变量。
+  nixpkgs.config.permittedInsecurePackages = [ "pnpm-10.34.0" ];
 }

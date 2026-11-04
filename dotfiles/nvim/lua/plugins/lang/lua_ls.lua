@@ -10,7 +10,6 @@ return {
     optional = true,
     opts = function(_, opts)
       local ret = {
-        ensure_installed = { "lua_ls", "lua-language-server", "stylua", "selene" },
         servers = {
           lua_ls = {
             settings = {
@@ -43,6 +42,15 @@ return {
           },
         },
       }
+      -- ensure_installed 必须**追加**，不能留在 ret 里交给 extend_tbl：
+      -- 后者底层是 vim.tbl_deep_extend("force")，对数组是按下标覆盖，
+      -- 会冲掉别的 lang 文件已经塞进去的项。详见 lang/java.lua 的注释。
+      opts.ensure_installed = utils.list_insert_unique(opts.ensure_installed or {}, {
+        "lua_ls",
+        "lua-language-server",
+        "stylua",
+        "selene",
+      })
       return utils.extend_tbl(opts, ret)
     end,
   },

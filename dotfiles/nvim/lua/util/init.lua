@@ -101,6 +101,32 @@ function M.on_load(name, fn)
   end
 end
 
+--- mason.nvim 的安装根目录。
+---
+--- **不要**用 `vim.fn.expand("$MASON/...")`：mason.nvim 只在
+--- `mason-core/installer/InstallLocation.lua` 里设 `vim.env.MASON`，那是安装/卸载时
+--- 才跑的代码，正常启动一次根本不会设。而 `expand` 对未设置的变量做的是**空前缀替换**：
+--- 实测 `expand("$MASON/share/jdtls")` 返回 `"/share/jdtls"` —— 一个不存在、却长得像
+--- 绝对路径的字符串，`fs_stat`/`glob` 静默失败，表现是「明明装好了却报没装」。
+--- 更阴的是 `expand("$NOPE")`（不带后续路径）反而返回字面量 `"$NOPE"`，两种行为不一致。
+--- 另外 `vim.fn.glob("$MASON/...")` 是**双重错误**：glob 根本不展开环境变量。
+---
+--- 解析顺序：mason.settings 的 install_root_dir（尊重自定义安装目录）
+--- → `vim.env.MASON`（真设了才用）→ `stdpath("data") .. "/mason"`（默认位置，
+--- 也是 lang/vue.lua 一直在用的写法）。
+---@return string|nil
+function M.mason_root()
+  local ok, settings = pcall(require, "mason.settings")
+  local dir = ok and settings.current and settings.current.install_root_dir
+  if dir and dir ~= "" then
+    return dir
+  end
+  if vim.env.MASON and vim.env.MASON ~= "" then
+    return vim.env.MASON
+  end
+  return vim.fn.stdpath("data") .. "/mason"
+end
+
 local LazyUtil = require("lazy.core.util")
 --- Override the default title for notifications.
 for _, level in ipairs({ "info", "warn", "error" }) do
