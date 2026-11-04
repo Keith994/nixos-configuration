@@ -10,7 +10,7 @@ binds {
     // Mod+Return hotkey-overlay-title="Open a Kitty Terminal" { spawn-sh "ghostty +new-window"; }
     Mod+Return hotkey-overlay-title="Open a Terminal" { spawn-sh "ghostty +new-window -e tmux new-session -A -s main || ghostty -e  tmux new-session -A -s main"; }
     Mod+Shift+Return hotkey-overlay-title="Open a Kitty Terminal" { spawn-sh "kitty"; }
-    Mod+Ctrl+Return hotkey-overlay-title="Open a Quick Terminal" { spawn-sh "ghostty +toggle-quick-terminal"; }
+    // Mod+Shift+Return hotkey-overlay-title="Open a Quick Terminal" { spawn-sh "ghostty +toggle-quick-terminal"; }
 
     // ── 音量 / 亮度（锁屏可用）────────────────────────────────
     XF86AudioLowerVolume allow-when-locked=true { spawn-sh "noctalia msg volume-down 3"; }

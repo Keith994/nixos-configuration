@@ -1,0 +1,33 @@
+services:
+  redis:
+    # 走 daocloud 镜像加速前缀拉取（等价于 redis:8.10.3）。
+    # 版本钉死：Redis 8.x 的 license 是 RSALv2/SSPLv1 双许可（AGPL 那条线从 8.0 起才有），
+    # 且小版本会改 RDB/AOF 格式兼容性 —— 用 latest 一旦跨大版本，旧数据卷可能直接起不来。
+    # 升版本前先确认 ~/nix-data/redis 里的 dump.rdb 能被新版本读（7.x 的数据 8.x 能读，反之不行）。
+    image: docker.m.daocloud.io/library/redis:8.10.3
+    container_name: redis
+    # appendonly 让 Redis 自己管持久化（见下面 command）；无参数启动时容器重启即清空。
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      # maxmemory 留余地：本机 30Gi 内存、唯一 swap 是 zram（AGENTS.md 第 8 节第 18 条），
+      # 开发用给 512m 足够；真吃满会先 LRU 驱逐 key 而不是把机器拖进 OOM。
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - allkeys-lru
+      # 无密码时 Redis 打 "accept connections from any IP" 的告警 —— 那个告警说的是进程本身
+      # 不受限，实际可达范围由下面 ports 绑回环决定，和 mosquitto 的 allow_anonymous 同一取舍。
+      # 要认证就加一行 --requirepass <密码>（密码入库有风险，可改走 env_file / .env）。
+    ports:
+      # 只绑回环：局域网/外部机器连不进来，仅本机可用（和 mosquitto / mysql 一致）。
+      - "127.0.0.1:6379:6379"
+    volumes:
+      # 数据落在仓库外的 ~/data/redis（与 mysql 的 /home/keith/data/mysql 同一套布局），
+      # 容器重建数据不丢。权限注意：镜像以 uid 999 运行，而本机 uid 999 恰好是 NetworkManager
+      # 的伪用户 nm-iodine（容器里显示成 redis）。docker 首建目录时属主就是它，所以**不需要**预先
+      # chown；副作用是 keith 读不到 appendonlydir（700）—— 要 host 侧直接看 dump 文件得
+      # sudo chown -R 1000:1000 ~/data/redis（容器重启后 chown 会还原，别依赖它）。
+      - /home/keith/data/redis:/data
+    restart: unless-stopped

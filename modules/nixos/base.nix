@@ -77,6 +77,16 @@
       "claude-code"
       "opencode"
       "vscode"
+
+      # VMware Workstation（宿主）：闭源二进制，meta.license = unfree 且
+      # redistributable = false。个人用途自 2024-11 起免费（Broadcom 改过 EULA），
+      # nixpkgs 仍按闭源标 unfree，所以照样要在这里放行。见 modules/nixos/vmware-host.nix。
+      "vmware-workstation"
+
+      # DBeaver **Enterprise Edition**：付费闭源，需要自己填 license key。
+      # 注意别和 nixpkgs 的 dbeaver-bin 混 —— 那个是 CE、Apache-2.0、不用放行。
+      # 见 modules/home/dbeaver-ee.nix。
+      "dbeaver-ee"
     ];
 
   # pnpm 10 在 nixpkgs 里被标成 insecure（一批 CVE），不放行会**直接求值失败**：

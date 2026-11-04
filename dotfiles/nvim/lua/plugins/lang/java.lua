@@ -312,18 +312,22 @@ return {
         "java.base/java.util=ALL-UNNAMED",
         "--add-opens",
         "java.base/java.lang=ALL-UNNAMED",
-        "-jar",
-        launcher,
-        "-data",
-        workspace_dir,
+        -- 注意 `-jar` 及其之后的东西**刻意不在这里**，见下面两段 ——
+        -- JVM 系统属性和 equinox 程序参数必须分别排在 -jar 的前/后，放错了会静默失效。
       }
 
-      -- OSGi 配置区**不要**用 `-configuration <dir>`。上游 jdtls.py 用的是下面这四个
-      -- -Dosgi.* 参数，差别在只读性上：-configuration 会让 equinox 把那个目录当成
-      -- 可写的配置区、往里写 .manager/.fileTable.lock，而 nix 路线下
-      -- $JDTLS_HOME/config_linux 在**只读的 nix store** 里，写了就起不来。
-      -- sharedConfiguration.area + readOnly=true + cascaded=true 的组合是"共享只读配置、
-      -- 实例配置级联到可写位置"，两条路线（nix 只读 / mason 可写）都成立。
+      -- 这四个 -Dosgi.* 是 **JVM 系统属性，必须排在 `-jar` 之前**：JVM 只解析 -jar 之前的
+      -- 选项，-jar 之后的一律当成传给 main 类的应用参数。以前用 vim.list_extend 把它们
+      -- 追加到整条命令的末尾，equinox 压根没收到 → 退回默认的
+      -- ~/.eclipse/<hash>/configuration，撞上 org.eclipse.osgi/.manager/.fileTableLock
+      -- 的权限/锁问题，java 以退出码 **13** 结束（nvim 侧显示
+      -- "Client jdtls quit with exit code 13 and signal 0"，而 lsp.log 里那条
+      -- "Error reading configuration … (Permission denied)" 才是真正的线索）。
+      --
+      -- 为什么不直接 `-configuration <nix 的 config_linux>`：equinox 会把它当**可写**
+      -- 配置区、往里写 .manager/.fileTableLock，而 nix store 是只读的，写了就起不来。
+      -- sharedConfiguration.area + readOnly=true + cascaded=true 才是"共享只读父配置 +
+      -- 实例配置级联到可写位置"，nix（只读）和 mason（可写）两条路线都成立。
       local configuration = jdtls_config(home)
       if configuration then
         vim.list_extend(cmd, {
@@ -333,6 +337,22 @@ return {
           "-Dosgi.configuration.cascaded=true",
         })
       end
+
+      -- 实例配置区显式指到 workspace 旁边的可写目录，**不要**用 equinox 默认的
+      -- ~/.eclipse/<hash>/configuration：那个位置跨项目共享，而且 nixpkgs 的 bin/jdtls
+      -- 包装脚本和这里 nvim-jdtls 的自定义 cmd 会从同一个 sharedConfiguration.area 算出
+      -- **同一个 <hash>**、去抢同一个 .fileTableLock —— 实测就是 exit 13。
+      -- 放到项目自己的目录下顺带做到各工程互不干扰、删 workspace 就一起清掉。
+      -- `-configuration` 是 **equinox 的程序参数**（不是 JVM 属性），所以排在 -jar 之后；
+      -- 下面 lombok / jdk24 那两处 table.insert(cmd, 2, …) 插在最前面，不会跑到 -jar 之后。
+      vim.list_extend(cmd, {
+        "-jar",
+        launcher,
+        "-configuration",
+        workspace_dir .. "-osgi",
+        "-data",
+        workspace_dir,
+      })
 
       -- jdtls 在 JDK 24+ 上要显式放开 XML 实体上限，否则解析大 POM / 大 XML 会失败。
       -- 现在是 jdk21 用不上，但 devtools.nix 明说换 JDK 只改一行（jdk25 就在手边），

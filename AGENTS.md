@@ -33,7 +33,26 @@ modules/home/*.nix            # 用户级模块（home-manager）
 modules/home/ai/*.nix         # AI 工具（dsh）
 dotfiles/                     # 真实配置文件，按程序分目录
   nvim/  niri/  umbriel/  ghostty/  foot/  tmux/  yazi/  rime/  noctalia/  starship/  fontconfig/  mpv/
+scripts/                      # 手工小工具（nix-update.sh、mqtt.sh、redis.sh），按需软链进 ~/.local/bin
+deploy/                       # 本地服务的 docker compose（不在 Nix 里跑服务）
+  mosquitto/                  #   eclipse-mosquitto:2，127.0.0.1:1883 + 9001
+  redis/                      #   redis:8.10.3，127.0.0.1:6379，AOF + maxmemory 512m，数据 ~/data/redis
 ```
+
+### 本地服务走 docker，不走 NixOS service（`deploy/`）
+
+这台机器的常驻后端服务统一用 `docker compose` 起在 `deploy/<服务>/docker-compose.yml`，
+不写 `services.*`：端口只绑 `127.0.0.1`，数据落在仓库外的 `~/data/<服务>/`（bind mount），
+`restart: unless-stopped`。镜像一律带 `docker.m.daocloud.io/` 前缀拉（等价于 Docker Hub 官方库；
+library 镜像要写成 `docker.m.daocloud.io/library/<image>`）。
+
+起停用 `scripts/<服务>.sh`（`up|down|restart|logs|ps`，不带参数 = up）。加新服务照抄这个形状：
+一个 `deploy/<name>/docker-compose.yml` + 一个 `scripts/<name>.sh`（从 `mqtt.sh` 复制改路径即可）。
+
+一个坑：**bind mount 的属主按主机路径解析**。Redis 镜像以 uid 999 运行，而本机 uid 999 恰好是
+NetworkManager 的伪用户 `nm-iodine`（容器里显示成 `redis`）。目录由 docker 首建时属主就是它，
+所以**不需要**预先 chown；副作用是 keith 读不到 `~/data/redis/appendonlydir`（700）——
+日常用 `docker exec redis redis-cli` 即可。
 
 ## 3. 常用命令
 
@@ -103,7 +122,7 @@ nixfmt <file.nix>
 | `rime.nix` | 见第 6 节「Rime 特例」 |
 | `devtools.nix` | go / rustc / cargo / nodejs（24.x）/ yarn / **pnpm_10** / lazygit / lazydocker / trash-cli / tree-sitter 等。pnpm 刻意钉 10 而不是默认的 11：外部 pnpm 工程的锁文件多是 `lockfileVersion 9.0`，11 会改写它（10 被 nixpkgs 标成 insecure，放行写在 `base.nix`，见第 8 节第 24 条）。Java 一组：`javaJdk`(jdk21) + `JAVA_HOME`、maven、gradle，外加 **`jdt-language-server`**（nvim 的 jdtls 本体，经 `JDTLS_HOME` 暴露）和 **`google-java-format`**（conform 用），后两个为什么不走 mason 见第 8 节第 23 条 |
 | `edge.nix` | 容器 / k8s 一组：`programs.k9s`（refreshRate 放宽到 5s + 鼠标滚轮）、HM 的 `services.podman`（**只做 rootless**，不碰 docker socket；`/etc/subuid` 与 setuid `newuidmap` 本机已具备）、`helm` / `kubectl` / `kubectl-convert` / `kubectx`（HM 没有 `programs.helm` / `programs.kubectl`，只能装包） |
-| `iot.nix` | 物联网 / 串口 / MQTT 一组：`mqttui`、`mosquitto`（只要客户端，broker 没在跑）、`mbpoll`、`picocom`（keith 不在 `dialout` 组，现在要 sudo）、`socat` |
+| `iot.nix` | 物联网 / 串口 / MQTT / Redis 一组：`mqttui`、`mosquitto`（只要客户端）、**`redis`**（只要 `redis-cli`）、`mbpoll`、`picocom`（keith 不在 `dialout` 组，现在要 sudo）、`socat`。broker 与 Redis server 都不走 NixOS service，统一在 docker 里（见 `deploy/` 那节） |
 | `network.nix` | 网络排查一组：`nmap`（connect 扫描不需要特权）、`iperf3`（只当客户端，5201 没放行）、`grpcurl`。抓包那两个在系统层，见 `modules/nixos/packet-capture.nix` |
 | `browsers.nix` | 两个浏览器：`programs.chromium` + `pkgs.google-chrome`（强制 Wayland 与 fcitx5 IME）；`inputs.zen-browser` 的 `programs.zen-browser` 模块（beta 通道，命令行 `zen-beta`；nixpkgs 里没有这个包，见第 8 节第 12 条）。两个都**没**抢默认浏览器 |
 | `apps.nix` | 没有 `programs.*` 模块、也不需要额外包装参数的 GUI 应用（obsidian、localsend、telegram-desktop）。unfree 的要同步 `base.nix` 的白名单 |
@@ -669,6 +688,59 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
     config 目录叫 `config`、**带 lombok.jar**。所以**需要 lombok 注解支持就应该把 mason 排到前面**
     （改 `jdtls_home()` 里 `add()` 的顺序即可）—— 当初定"nix 优先"是因为 mason 下不动，
     后来 GitHub 可达了、mason 一次装齐 17 个包，这个前提已经变了。
+
+    **`Client jdtls quit with exit code 13`（区别于 exit 1）**：exit 1 是 jarfile 找不到，
+    exit 13 是 equinox 起不来，真正的线索同样只在 `lsp.log` 的 stderr 里：
+
+    ```
+    !MESSAGE Error reading configuration: /home/<user>/.eclipse/818858927_linux_gtk_x86_64/
+             configuration/org.eclipse.osgi/.manager/.fileTableLock (Permission denied)
+    ```
+
+    两个独立成因，都要治：
+    - **`-D…` 是 JVM 属性，必须排在 `-jar` 之前**。JVM 只解析 `-jar` 之前的选项，
+      之后的一律当成传给 main 类的**应用参数**。用 `vim.list_extend(cmd, {…})` 把
+      `-Dosgi.sharedConfiguration.area=` 之类追加到命令末尾 = equinox 压根没收到，
+      于是退回默认配置区。判据：`.metadata/.log` 里的 `Command-line arguments:` 只剩
+      `-data <workspace>`，说明那些 -D 全丢了。对照上游 `jdtls.py` 的 `exec_args`：
+      所有 `-D…` / `-X…` / `--add-…` 都在 `["-jar", jar_path, "-data", …]` **之前**；
+      而 `-configuration` / `-data` 是 **equinox 的程序参数**，在 `-jar` **之后**。
+    - **别用 equinox 默认的 `~/.eclipse/<hash>/configuration` 当实例配置区**。那个 `<hash>`
+      由 `sharedConfiguration.area` 算出来，所以 nixpkgs 的 `bin/jdtls` 包装脚本和
+      nvim-jdtls 这条自定义 cmd 会算出**同一个 hash、抢同一个 `.fileTableLock`**；
+      它还是跨项目共享的，残留锁 / 权限问题都会让 java 以 13 退出。
+      修法是级联配置：`-Dosgi.configuration.cascaded=true` +
+      `-Dosgi.sharedConfiguration.area=<只读的 nix config_linux>` +
+      `…area.readOnly=true`（JVM 属性，`-jar` 前），再配一个**可写**的
+      `-configuration <workspace_dir>-osgi`（equinox 参数，`-jar` 后）指向项目自己的目录。
+
+    手工复现/验证很快，不用反复开 nvim（`124` = timeout = 进程活着在等 LSP 输入 = 成功，
+    `13` = 失败）。要更硬的证据就直接喂一个 `initialize`：
+
+    ```bash
+    JH=$(dirname $(dirname $(readlink -f $(command -v jdtls))))/share/java/jdtls
+    JAR=$(ls $JH/plugins/org.eclipse.equinox.launcher_*.jar | head -1)
+    rm -rf /tmp/jp && mkdir -p /tmp/jp/data /tmp/jp/cfg && cd /tmp/jp
+    timeout 40 java -Declipse.application=org.eclipse.jdt.ls.core.id1 \
+      -Declipse.product=org.eclipse.jdt.ls.core.product \
+      -Dosgi.checkConfiguration=true -Dosgi.sharedConfiguration.area=$JH/config_linux \
+      -Dosgi.sharedConfiguration.area.readOnly=true -Dosgi.configuration.cascaded=true \
+      --add-modules=ALL-SYSTEM -jar "$JAR" -configuration /tmp/jp/cfg -data /tmp/jp/data
+    echo "EXIT=$?"
+    ```
+
+    按上面修完实测：进程活满超时（`EXIT=124`）、`~/.eclipse/` 不再新增条目、
+    发真实 `initialize` 能拿到 `serverInfo = JDT Language Server (Standard) 1.58.0-SNAPSHOT`
+    和 26 项 capabilities。
+
+    顺带：`lsp.log` 里 `"rpc" "<java>" "stderr"` 一律记成 `[ERROR]`，那只是 nvim 把 stderr
+    原样转成 ERROR 级日志，**不代表失败**（`WARNING: Using incubator modules: jdk.incubator.vector`、
+    Spring 的 `BeanPostProcessorChecker` 警告都长这样）；`LSP[spring-boot] "Cannot find request
+    with id N whilst attempting to cancel"` + `Unmatched cancel notification` 也是良性的
+    取消竞态。判断 jdtls 死没死要看 `quit with exit code`，别被满屏 ERROR 带跑。
+    另外 `spring-boot.nvim` 会**另起一个 java 进程**跑 vscode-spring-boot-tools，
+    和 jdtls 同样用 `/etc/profiles/per-user/keith/bin/java`，所以在 lsp.log 里
+    按进程路径根本分不清是谁 —— 只能看日志内容。
 
 24. `pnpm_10` 被 nixpkgs 标成 **insecure**（一批 CVE），不放行会让整个 flake **求值失败**
     （`error: Package ‘pnpm-10.34.0’ is marked as insecure`），连带 `nix eval` / `nr` / `nb` 全跑不动。

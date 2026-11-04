@@ -1,0 +1,13 @@
+services:
+  mosquitto:
+    # 走 daocloud 镜像加速前缀拉取（等价于 eclipse-mosquitto:2）。
+    # 以后手动拉别的官方镜像同理：docker.m.daocloud.io/library/<image>
+    image: docker.m.daocloud.io/eclipse-mosquitto:2
+    container_name: mosquitto
+    ports:
+      # 只绑回环：局域网/外部机器连不进来，仅本机可用。
+      - "127.0.0.1:1883:1883"   # MQTT
+      - "127.0.0.1:9001:9001"   # WebSocket（浏览器端调试用，不用可删）
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    restart: unless-stopped

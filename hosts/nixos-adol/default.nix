@@ -29,6 +29,11 @@
 
   networking.hostName = "adol";
 
+  # 屏蔽 DBeaver 遥测（127.0.0.2 是 adol 自己，回环上直接吃掉请求）
+  networking.extraHosts = ''
+    127.0.0.1 stats.dbeaver.com
+  '';
+
   # 普通用户
   users.users.${username} = {
     isNormalUser = true;
