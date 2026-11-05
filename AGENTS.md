@@ -205,8 +205,8 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
 
 `modules/home/ai/deepseek-harness.nix` 用 `writeShellApplication` 包装 `dsh`：
 
-- 版本 **pin** 在 `@deepseek-ai/dsh@0.2.1-rc.5`（`npx --package=...`；这是 npm 的 `latest`/`next` 标签，
-  `alpha` 标签是另一条更新的线）。升级 = 改这一行 + rebuild + **跟着升插件**（见下面陷阱 2）；
+- 版本 **pin** 在 `@deepseek-ai/dsh@0.2.2-rc.1`（`npx --package=...`；这是 npm 的 `next` 标签，
+  `latest` 仍停在 `0.2.1-rc.5`，`alpha` 是另一条更新的线）。升级 = 改这一行 + rebuild + **跟着升插件**（见下面陷阱 2）；
 - runner 用 `node --expose-internals` 启动由 `$(command -v dsh)` 解析出的真实入口；
 - 设置 `DSH_HOME = ${xdg.dataHome}/deepseek-harness`；
 - **node 由 fnm 提供，wrapper 不自己装 node**：`runtimeInputs` 里只有 `fnm`、`coreutils`、`pnpmOnly`、
@@ -238,7 +238,7 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
    `devtools.nix` 里的 `nodejs`（nixpkgs 24）跟 dsh 无关，别混；**把 `nodejs_26` 之类写进
    `runtimeInputs` 是无效的**（这么改过，rebuild 后照旧失败）；换 loader 版本也没用（把 0.2.0-rc.2 的
    `node-addon-require-builtin` 降到 0.1.6 仍报同一个错，说明 0.1.x 那个老 dsh 能跑纯粹是因为它没有
-   这段宿主拦截）。顺带一提，`0.2.1-rc.5` 把这个 loader 提到了 `^0.1.9`（rc.2 是 `^0.1.6`）——
+   这段宿主拦截）。顺带一提，`0.2.1-rc.5` / `0.2.2-rc.1` 这个 loader 都是 `^0.1.9`（rc.2 是 `^0.1.6`）——
    版本在动，但「只认官方 node」这个结论没变，wrapper 不用跟着改。
 2. **插件必须跟 runtime 版本对齐**（插件装在仓库外，`git status` 里看不到）。dsh 启动时按
    peerDependencies 逐个检查 bundle，不匹配就整包 skip：
@@ -249,14 +249,16 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
    ```
 
    09-30 那次 `0.1.5-rc.1 → 0.2.0-rc.2` 的 bump 就是这样把 09-15 装的一批插件全废掉的（它们 peer 指
-   `^0.1.5-rc.1`）。升/降 runtime 之后要跟着升插件。与 `0.2.1-rc.5` 对齐的一组（2026-11 查证）：
+   `^0.1.5-rc.1`）。升/降 runtime 之后要跟着升插件。与 `0.2.2-rc.1` 对齐的一组（2026-11 查证）：
 
    ```bash
    dsh plugin --profile web add \
-     dsh-better-sidebar@0.28.2 dsh-codex-connect@0.2.0-alpha.11 dsh-context@0.80.2 \
-     dsh-cost-meter@1.9.51 dsh-dream-skin@11.3.0 dshmarket@1.73.9 \
-     @furongjun1999/dsh-memory@0.9.22 @linxin666/dsh-client-ui-skill-explorer@0.4.14 \
-     @liustack/modlens@3.27.2
+     dsh-better-sidebar@0.30.0 dsh-context@0.81.2 dsh-cost-meter@1.9.57 \
+     dsh-dream-skin@11.4.1 dshmarket@1.73.11 @furongjun1999/dsh-memory@0.9.22 \
+     @linxin666/dsh-client-ui-skill-explorer@0.4.15 @liustack/modlens@3.27.2
+   # dsh-codex-connect 目前没有兼容 0.2.2-rc.1 的版本（见下），要留它只能：
+   #   dsh plugin --profile web add dsh-codex-connect@0.2.0-alpha.12
+   #   再在 compatibility.json 写 {"dsh-codex-connect@0.2.0-alpha.12": ["0.2.2-rc.1"]}
    # dsh-superpowers 走 git（github:icanfinish11/dsh_superpowers）、无 peer 约束，
    # 不参与版本对齐；要刷新上游 skills 才需要重新 add 一次。
    ```
@@ -269,21 +271,22 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
    curl -s https://registry.npmjs.org/dsh-better-sidebar \
      | jq -r '.versions | to_entries[] | "\(.key)\t\(.value.peerDependencies["@deepseek-ai/dsh-agent"] // "-")"'
    # runtime 侧实际带的 cordis / schemastery（插件也 peer 这些）
-   curl -s https://registry.npmjs.org/@deepseek-ai%2Fdsh/0.2.1-rc.5 \
+   curl -s https://registry.npmjs.org/@deepseek-ai%2Fdsh/0.2.2-rc.1 \
      | jq '.dependencies | with_entries(select(.key|test("cordis|schemastery")))'
    ```
 
    几个具体结论，省得下次重推：
 
-   - `0.2.1-rc.5` 带 `@deepseek-ai/cordis ~4.0.5`，正好是 `dsh-better-sidebar@0.28.x` 要的下限
-     （`^4.0.5`）。`0.2.0-rc.2` 只带 `~4.0.4`，所以 better-sidebar 0.28 在旧 runtime 上**装不上**，
-     这不是 peer 里 `dsh-agent` 那条的作用，别只盯着它看；
-   - `dsh-codex-connect` 的 peer 是**逐个 runtime 版本枚举**的白名单（`0.2.1-rc.3 || 0.2.1-rc.4 || …`），
-     不是范围。它的 npm `latest` 标签**长期落后于 `alpha` 标签**（`latest` = `0.2.0-alpha.10`，只枚举到
-     `0.2.1-rc.3`；`alpha` = `0.2.0-alpha.11` 才含 `rc.5`），所以这里必须写死 alpha 版本号，
-     写 `@latest` 会被判不兼容；
-   - `@linxin666/dsh-client-ui-skill-explorer` peer 的是**元包** `@deepseek-ai/dsh >= 0.2.1-rc.3`
-     （不是子包），它实际上是整套插件里的 runtime 下限来源之一；
+   - `0.2.2-rc.1` 带 `@deepseek-ai/cordis ~4.1.0`。`dsh-better-sidebar@0.30.x` 的 cordis 下限是
+     `^4.0.5`（4.1.0 满足），peer 则全部指向 `^0.2.2-rc.1`；`0.28.x` 只到 `^0.2.1-rc.1`，
+     在 0.2.2 上会被 skip。反过来 `0.2.1-rc.5` 只带 `~4.0.5`，所以 0.30 也装不上旧 runtime；
+   - `dsh-codex-connect` 的 peer 是**逐个 runtime 版本枚举**的白名单（`… || 0.2.2-alpha.3`），
+     不是范围。截至 2026-11 它的 `alpha` 标签（`0.2.0-alpha.12`）只枚举到 `0.2.2-alpha.3`，
+     **没有**兼容 `0.2.2-rc.1` 的版本 —— 要保留它只能装 alpha.12 再手工在 `compatibility.json`
+     里豁免 `{"dsh-codex-connect@0.2.0-alpha.12": ["0.2.2-rc.1"]}`，或者等上游跟进。
+     它的 npm `latest` 标签长期落后（`0.2.0-alpha.10`），别写 `@latest`；
+   - `@linxin666/dsh-client-ui-skill-explorer` peer 的是**元包** `@deepseek-ai/dsh`：
+     `0.4.15` 起要求 `>=0.2.2-rc.1`（`0.4.14` 只要求 `>=0.2.1-rc.3`，对 0.2.2 也成立，但直接上 0.4.15）；
    - `react` / `react-dom` 那几条 peer 不参与判定（`dsh-context@0.53.2` 早就 peer `react ^18.3.1`
      且一直正常加载），别为它去动 profile 的依赖。
 
