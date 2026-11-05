@@ -89,6 +89,14 @@ in
   # 别指望 wrapper 兜底，它们的 fallback 是 jdk_headless，不带我们要的那个版本。
   home.sessionVariables.JAVA_HOME = "${javaJdk.home}";
 
+  # 给 nvim 的 lang/java.lua 用来启动 jdtls / spring-boot LS **本体**。
+  # 必须和项目 $JAVA_HOME 分开：项目 devShell（比如 scet-iot 的 flake）会把
+  # PATH 和 JAVA_HOME 换成 jdk8，但 jdtls 1.58 自己只能跑在 17/21 上 ——
+  # 用 jdk8 启动会报 "Unrecognized option: --add-modules=ALL-SYSTEM" 直接退出。
+  # 固定指向全局 javaJdk（当前 jdk21）；项目编译目标仍由 java.configuration.runtimes
+  # 跟着 $JAVA_HOME 走，两者互不影响。
+  home.sessionVariables.JDTLS_JAVA_HOME = "${javaJdk.home}";
+
   # 给 nvim 的 lang/java.lua 用来定位 jdtls 本体（它按 $JDTLS_HOME → $MASON/share/jdtls
   # 的顺序探测）。和 JAVA_HOME 同理走 sessionVariables，从 niri / foot 起的 nvim 才拿得到。
   #

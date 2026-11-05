@@ -23,17 +23,88 @@ local function extend_or_override(config, custom, ...)
   return config
 end
 
--- JDK 由 home-manager 提供（modules/home/devtools.nix 里的 javaJdk + JAVA_HOME）。
+-- JDK 由 home-manager 提供（modules/home/devtools.nix 里的 javaJdk + JAVA_HOME/JDTLS_JAVA_HOME）。
 -- NixOS 上没有 /usr/lib/jvm 这种发行版约定路径，也没有 jenv / sdkman，
--- 所以这里一律从 PATH 和 $JAVA_HOME 推导，**不写死 store 路径**：
+-- 所以这里从环境变量和 profile 推导，**不写死 store 路径**：
 -- store 路径进 dotfiles 会在每次 nix flake update 之后产生一行无意义的 diff。
+-- 注意区分两个 JDK：
+--   * 跑 jdtls / spring-boot LS 本体的 JVM —— 见 jdtls_java_home()，固定取全局 jdk21；
+--   * 项目编译目标 —— 见 java_runtimes()，跟着项目 devShell 的 $JAVA_HOME（本项目是 jdk8）。
+-- 读某个 JDK home 的主版本号（8 及以前 release 里写 1.8.0_xxx），失败返回 nil。
+local function java_home_major(home)
+  if not home or home == "" then
+    return nil
+  end
+  local f = io.open(home .. "/release", "r")
+  if not f then
+    return nil
+  end
+  local raw = f:read("*a"):match('JAVA_VERSION="([^"]+)"')
+  f:close()
+  local feature = raw and (raw:match("^1%.(%d+)") or raw:match("^(%d+)"))
+  return feature and tonumber(feature) or nil
+end
+
+-- 给 jdtls / spring-boot LS **本体**挑 JVM，和项目运行时（$JAVA_HOME）解耦。
+-- 项目里的 direnv + devShell 会把 PATH 上的 java 换成 jdk8（scet-iot 就是），
+-- 但 jdtls 1.58 和这些 LS 自己必须跑在 17/21 上。用 jdk8 启动会直接死在
+--   "Unrecognized option: --add-modules=ALL-SYSTEM"        （jdtls）
+--   "Unrecognized VM option 'UseZGC'"                       （spring-boot.nvim）
+-- 项目编译用哪个 JDK 由下面 java_runtimes() 的 java.configuration.runtimes 决定，
+-- 和这里启动 LS 的 JVM 是两回事。
+-- 优先级：$JDTLS_JAVA_HOME（devtools.nix 设成全局 jdk21）→ home-manager profile
+-- → PATH 上那个（可能已被 devShell 换成老版本，只作兜底）。
+local function jdtls_java_home()
+  local candidates = {}
+  local function add(root)
+    if root and root ~= "" then
+      candidates[#candidates + 1] = root
+    end
+  end
+  add(vim.env.JDTLS_JAVA_HOME)
+  if vim.env.HOME and vim.env.HOME ~= "" then
+    add(vim.env.HOME .. "/.nix-profile")
+  end
+  local user = vim.env.USER or vim.env.LOGNAME
+  if user and user ~= "" then
+    add("/etc/profiles/per-user/" .. user)
+  end
+  for _, root in ipairs(candidates) do
+    -- 候选既可能是 JDK home（有 release），也可能只是 profile 根（只有 bin/java 软链）。
+    -- profile 根不能直接读 release：软链实际指向 <store>/lib/openjdk/bin/java，
+    -- 所以 realpath 后取两层 dirname 才是真正的 JDK home。
+    local home = root
+    if not vim.uv.fs_stat(root .. "/release") then
+      local exe = root .. "/bin/java"
+      if not vim.uv.fs_stat(exe) then
+        home = nil
+      else
+        local real = (vim.uv.fs_realpath and vim.uv.fs_realpath(exe)) or exe
+        home = vim.fn.fnamemodify(vim.fn.fnamemodify(real, ":h"), ":h")
+      end
+    end
+    -- 只接受 jdtls 1.58 能跑的版本（21+）：哪天 home profile 被换成 8/17
+    -- 也不会再踩同一个坑。
+    local major = home and java_home_major(home)
+    if major and major >= 21 and vim.uv.fs_stat(home .. "/bin/java") then
+      return home
+    end
+  end
+  return nil
+end
+
 local function java_exe()
+  local home = jdtls_java_home()
+  if home then
+    return home .. "/bin/java"
+  end
   local exe = vim.fn.exepath("java")
   return (exe ~= "" and exe) or "java"
 end
 
--- jdtls 的 java.configuration.runtimes：从 $JAVA_HOME/release 的 JAVA_VERSION 推出执行环境名，
--- 这样在 devtools.nix 里换 JDK 版本（jdk21 → jdk17 / jdk8），这个文件一行都不用改。
+-- jdtls 的 java.configuration.runtimes：从**项目** $JAVA_HOME/release 的 JAVA_VERSION
+-- 推出执行环境名（项目 devShell 设的 jdk8 → JavaSE-1.8），这是编译/补全用的目标 JDK，
+-- 和上面启动 LS 本体的 jdk21 无关。
 -- 需要多版本并存时也别往 home.packages 里堆 JDK：home-manager 的 home.path 是
 -- buildEnv（不忽略冲突），两个 JDK 会在 bin/java 上撞车直接构建失败 ——
 -- 改用 direnv + 项目内 devShell，每个项目自己选。
@@ -155,23 +226,11 @@ local function jdtls_config(home)
   return nil
 end
 
--- JDK 主版本号，从 $JAVA_HOME/release 读（和 java_runtimes 同一个来源，不额外起子进程）。
--- 用途见下面 cmd 里的 -Djdk.xml.*：jdtls 在 JDK 24+ 上需要显式放开 XML 实体上限。
--- devtools.nix 明说换 JDK 只改一行（jdk8/11/17/21/25 都有），所以这里跟着 release 走，
--- 别写死版本号。
-local function java_major()
-  local home = vim.env.JAVA_HOME
-  if not home or home == "" then
-    return nil
-  end
-  local f = io.open(home .. "/release", "r")
-  if not f then
-    return nil
-  end
-  local raw = f:read("*a"):match('JAVA_VERSION="([^"]+)"')
-  f:close()
-  local feature = raw and (raw:match("^1%.(%d+)") or raw:match("^(%d+)"))
-  return feature and tonumber(feature) or nil
+-- JDK 主版本号，用途见下面 cmd 里的 -Djdk.xml.*：jdtls 在 JDK 24+ 上需要显式放开
+-- XML 实体上限。这里必须看**启动 jdtls 的 JVM**（jdtls_java_home），不是项目 $JAVA_HOME；
+-- 之前读 $JAVA_HOME，项目切到 jdk8 后就永远拿不到 jdk24+ 的标志位了。
+local function java_major(home)
+  return java_home_major(home or jdtls_java_home() or vim.env.JAVA_HOME)
 end
 
 return {
