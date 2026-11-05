@@ -180,6 +180,14 @@ return {
         -- 与 VS Code 配置保持一致：Nix 的 gcc 15 默认把告警当错误，
         -- -Wno-error 让 cgo 侧告警不至于中断调试构建。
         env = { CGO_CFLAGS = "-O2 -g -Wno-error" },
+        -- 【坑，实测 2026-11-04】我们 table.insert 的配置**不走** dap-go 的
+        -- setup_go_configuration，它默认的 output_mode 不会自动带上来。
+        -- dlv 规则：outputMode=remote 时才把被调程序的 stdout/stderr 包成 DAP 的
+        -- output 事件；再给 console 才真正转给客户端。缺一个，程序输出就被 delve
+        -- 吞掉，dapui 的 console 只剩 "Building ..." / "Type 'dlv help' ..." 两行。
+        -- （程序自己写文件或走 logger 不受影响，只是终端里看不到。）
+        outputMode = "remote",
+        console = "integratedTerminal",
       })
 
       -- 2) 调试整个 server，用相对路径（cwd=${workspaceFolder} 下等价于上面那条）
@@ -193,6 +201,8 @@ return {
         buildFlags = tags,
         cwd = "${workspaceFolder}",
         env = { CGO_CFLAGS = "-O2 -g -Wno-error" },
+        outputMode = "remote",
+        console = "integratedTerminal",
       })
 
       -- 3) 调试仓库里某个可执行包：program 用 ${fileDirname}，所以只在 main 包目录下的
