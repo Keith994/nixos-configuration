@@ -38,5 +38,9 @@
     btop
     gdu
     tldr
+    parted
+    exfatprogs
+    # 进度查看工具 progress -w
+    progress 
   ];
 }
