@@ -64,7 +64,7 @@ return {
                 },
                 codelenses = {
                   gc_details = true, -- Show a code lens toggling the display of gc's choices.
-                  generate = true,   -- show the `go generate` lens.
+                  generate = true, -- show the `go generate` lens.
                   regenerate_cgo = true,
                   test = true,
                   tidy = true,
@@ -197,7 +197,7 @@ return {
         request = "launch",
         mode = "debug",
         program = "./cmd/server",
-        args = { "-c", "config_cloud.local_keith.conf" },
+        args = { "-c", "${workspaceFolder}/config_cloud.local_keith.conf" },
         buildFlags = tags,
         cwd = "${workspaceFolder}",
         env = { CGO_CFLAGS = "-O2 -g -Wno-error" },
@@ -258,26 +258,17 @@ return {
   {
     "nvim-neotest/neotest",
     optional = true,
-    dependencies = { {
-      "fredrikaverpil/neotest-golang",
-      version = "*",                                                            -- Optional, but recommended; track releases
-      build = function()
-        vim.system({ "go", "install", "gotest.tools/gotestsum@latest" }):wait() -- Optional, but recommended
-      end,
-    } },
+    dependencies = {
+      {
+        "fredrikaverpil/neotest-golang",
+        version = "*", -- Optional, but recommended; track releases
+        build = function()
+          vim.system({ "go", "install", "gotest.tools/gotestsum@latest" }):wait() -- Optional, but recommended
+        end,
+      },
+    },
     opts = function(_, opts)
-      if not opts.adapters then
-        opts.adapters = {}
-      end
-      -- neotest 用 tree-sitter 发现测试位置。缺 go parser 时 discover_positions
-      -- 抛错，neotest 退回 file/test 级 runspec，而这两处只认 args.strategy == "dap"：
-      -- 默认 integrated 策略拿不到 command，build_spec 返回 { strategy = {} }，
-      -- dap 策略见 spec.strategy 为空就 return nil，runner.lua:57 索引 nil 的
-      -- instance，报出那句没头没尾的 "attempt to index local 'instance' (a nil value)"。
-      -- gopls.lua 上面的 treesitter ensure_installed 只在打开 go 文件时生效，
-      -- 目录级 `:Neotest run` / 首屏就跑测试时可能还没装，这里兜底补一次。
-      -- （treesitter main 分支并不消费 opts.ensure_installed，真正安装的是
-      -- plugins/treesitter.lua 里 config 函数那段 install 逻辑，所以要 lazy.load。）
+      opts.adapters = opts.adapters or {}
       vim.defer_fn(function()
         local missing = {}
         for _, lang in ipairs({ "go", "gomod", "gosum", "gowork" }) do
@@ -290,47 +281,84 @@ return {
           require("lazy").load({ plugins = { "nvim-treesitter" } })
         end
       end, 100)
-      table.insert(opts.adapters, require("neotest-golang")({
-        runner = "gotestsum", -- Optional, but recommended
-        -- 这个仓库的 run.sh 用 `-tags "with_iot with_extend"` 构建（见仓库根 run.sh），
-        -- 测试也得带上同样的 tags，否则 register_plugins.go / with_iot.go 那批文件
-        -- 不参与编译。另外 data/plugins 里有大量 `fmt.Errorf(非字面量)`，go vet
-        -- （go1.24 起是 go test 默认步骤）会直接 build failed —— neotest-golang 会把
-        -- 这种失败静默标成 skipped（runspec/file.lua:18 "No tests found in file"），
-        -- 看着就像"跑了但没结果"，所以必须 -vet=off。-race 默认参数先去掉：CGO 环境
-        -- 不一定齐，而且 neotest-golang 对 -race 有 CGO 校验、失败会直接 error。
-        go_test_args = { "-vet=off", "-count=1", "-tags", "with_iot with_extend" },
-        gotestsum_args = { "--format=testname" },
-        -- `:Neotest debug` 走 dap 策略，neotest-golang 的 dap runspec（dap_go.lua）
-        -- **不读** go_test_args，buildFlags 只从 dap_go_opts.delve.build_flags 拿；
-        -- 不带 tags 的话 delve 编译出来的测试二进制和 run.sh 不是同一套代码。
-        --
-        -- 【坑，实测 2026-11-04】tags 必须写成 `-tags=a,b` 逗号形式，**绝不能**用空格：
-        -- nvim-dap-go 把 build_flags 用 `table.concat(x, " ")` 拼成一个字符串塞进 DAP 的
-        -- buildFlags，dlv 收到后再按空格切词，于是
-        --   { "-tags", "with_iot with_extend" }  ->  ... -tags with_iot with_extend ...
-        -- 被切成 "-tags with_iot" + 多出一个包名 "with_extend"，报
-        --   `package with_extend is not in std`，:Neotest debug 直接 Failed to launch。
-        -- 真实命令（从 dlv DAP 的 output 事件里抓的）：
-        --   go test -c -o __debug_bin... -gcflags all=-N -l \
-        --     -tags with_iot with_extend -vet off <testdir>
-        -- 用逗号合进同一个 token 就没有二次切词问题；-vet=off 同理写成等号形式。
-        -- 已用真实 DAP 协议验证：launch success=true。
-        --
-        -- delve.path 用 mason 装的绝对路径：mason.nvim 只在「安装动作」时才设
-        -- vim.env.MASON / PATH，正常启动后 nvim-dap-go 默认的 `dlv` 不在 PATH 上，
-        -- adapter 起不来就是静默失败（见 util/treesitter.lua 同款 $MASON expand 坑）。
-        -- 注意 vim.fn.glob(x, true, false) 返回的是**字符串**不是列表，别 [1]。
-        --
-        -- 为什么 nvim 里不能靠 `go test -tags "a b"` 的经验照搬：普通 go 命令由 sh 切词，
-        -- 引号能保住空格；dlv 的 buildFlags 是「再切一次词」的字符串，没有 sh 语义。
-        dap_go_opts = {
+      local dlv = vim.fn.stdpath("data") .. "/mason/bin/dlv"
+      local go_tags = "-tags=with_iot,with_extend"
+      -- 判断是否为特定仓库
+      -- 通过仓库特有文件识别，避免写死绝对路径
+      local function is_scet_rulego()
+        local found = vim.fs.find("config_cloud.local_keith.conf", {
+          path = vim.fn.getcwd(),
+          upward = true,
+        })
+        return #found > 0
+      end
+
+      local function dap_go_opts()
+        if is_scet_rulego() then
+          return {
+            delve = {
+              path = dlv,
+              build_flags = {
+                go_tags,
+                "-vet=off",
+              },
+            },
+          }
+        end
+
+        return {
           delve = {
-            path = vim.fn.expand("~/.local/share/nvim/mason/bin/dlv"),
-            build_flags = { "-tags=with_iot,with_extend", "-vet=off" },
+            path = dlv,
           },
-        },
-      }))
+        }
+      end
+      table.insert(
+        opts.adapters,
+        require("neotest-golang")({
+          runner = "gotestsum", -- Optional, but recommended
+
+          -- 普通测试
+          go_test_args = function()
+            if is_scet_rulego() then
+              return {
+                "-v",
+                "-count=1",
+                "-vet=off",
+                go_tags,
+              }
+            end
+
+            return {
+              "-v",
+              "-count=1",
+            }
+          end,
+          -- go list 包信息解析
+          go_list_args = function()
+            if is_scet_rulego() then
+              return { go_tags }
+            end
+            return {}
+          end,
+
+          gotestsum_args = {
+            "--format=testname",
+          },
+
+          -- CGO 环境变量
+          env = function()
+            if is_scet_rulego() then
+              return {
+                CGO_CFLAGS = "-O2 -g -Wno-error",
+              }
+            end
+            return {}
+          end,
+
+          -- DAP 调试
+          dap_go_opts = dap_go_opts(),
+        })
+      )
     end,
   },
   {
