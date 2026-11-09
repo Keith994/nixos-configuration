@@ -32,15 +32,23 @@ let
   # 没 key 也能启动，但企业版特性（Cloud Sync、NoSQL 高级支持等）是锁住的。
   # 刻意不把 key 写进仓库：AGENTS.md 第 8 节第 1 条，密钥一律不入库。
   #
-  # javaagent：dbeaver-agent 26.1 的补丁构建（~/90-github/dbeaver-agent-new）。
+  # javaagent：dbeaver-agent 26.1 的补丁构建（~/nix-config/dotfiles/）。
+  # 用的是 9MB 的 fat jar（带 Premain-Class 和全部依赖），不是同目录的瘦 jar，
+  # 否则启动会报 Failed to find Premain-Class manifest attribute。
+  # 上游 dbeaver.ini 要求 **两条** 都加：`-javaagent:` 和 `-Xbootclasspath/a:`
+  # （后者让 agent 里的类对 bootstrap classloader 可见，缺了部分功能会失效）。
+  # 上游还要求开头用 `-vm` 指一份完整 JDK/JRE：这里等价地由 makeWrapper 的 PATH +
+  # JAVA_HOME（openjdk21）提供，并删掉包内自带 jre（见上）。
+  #
   # store 只读，改不了包里的 dbeaver.ini，所以这里用 `cp -r --no-preserve=all`
   # 拷一份可写的出来再追加。两个坑：
   #   - `-vmargs` 必须是 ini 的**最后一段**，它后面的行全归 JVM；agent 参数只能
   #     追加在文件末尾（放在 `-vmargs` 之前会被 equinox 当成启动器参数吃掉）。
-  #   - `-javaagent:` 冒号后**不能有空格**，路径必须绝对 —— ini 没有变量展开，
-  #     相对路径按 dbeaver 二进制所在目录解析，所以 agent jar 的路径被硬编码进
-  #     store（重新 mvn package 若换了文件名/位置，要同步改下面这行并 rebuild）。
-  agentJar = "/home/keith/90-github/dbeaver-agent-new/target/dbeaver-agent-26.1-SNAPSHOT-jar-with-dependencies.jar";
+  #   - `-javaagent:` / `-Xbootclasspath/a:` 冒号后**不能有空格**，路径必须绝对 ——
+  #     ini 没有变量展开，相对路径按 dbeaver 二进制所在目录解析，所以 agent jar 的
+  #     路径被硬编码进 store（重新 mvn package 若换了文件名/位置，要同步改下面这行
+  #     并 rebuild）。
+  agentJar = "/home/keith/nix-config/dotfiles/dbagent-261.jar";
 
   dbeaver-ee = pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
     pname = "dbeaver-ee";
@@ -60,7 +68,13 @@ let
       pkgs.autoPatchelfHook
     ];
 
-    buildInputs = [ pkgs.gtk3 ];
+    buildInputs = [
+      pkgs.gtk3
+      # DBeaver 通过 JNA 加载 libsecret-1.so 做密码库（Linux keyring），
+      # 不放进 buildInputs / LD_LIBRARY_PATH 就会在启动时抛
+      # "Unable to load library 'secret-1'" 并中断 platform init。
+      pkgs.libsecret
+    ];
 
     # 让它去 patchelf 我们给的库，而不是包里的 jre/lib（jre 已被 preInstall 删掉）。
     autoPatchelfIgnoreMissingDeps = [ "*" ];
@@ -90,7 +104,11 @@ let
       chmod +x $out/opt/dbeaver-ee/dbeaver
 
       # 补丁 dbeaver.ini：在末尾（-vmargs 段内）追加 javaagent。
-      printf '%s\n' '-javaagent:${agentJar}' >> $out/opt/dbeaver-ee/dbeaver.ini
+      # 两条都要，顺序与上游 dbeaver.ini 一致。
+      printf '%s\n' \
+        '-javaagent:${agentJar}' \
+        '-Xbootclasspath/a:${agentJar}' \
+        >> $out/opt/dbeaver-ee/dbeaver.ini
 
       makeWrapper $out/opt/dbeaver-ee/dbeaver $out/bin/dbeaver-ee \
         --prefix PATH : "${pkgs.openjdk21}/bin" \
@@ -100,6 +118,7 @@ let
           pkgs.lib.makeLibraryPath [
             pkgs.gtk3
             pkgs.glib
+            pkgs.libsecret
             pkgs.webkitgtk_4_1
             pkgs.glib-networking
           ]
