@@ -32,7 +32,7 @@
     ../../modules/home/network.nix
 
     # 两个数据库客户端，都因为 nixpkgs 里没有能直接用的包而各自建模块：
-    #   dbeaver-ee.nix —— DBeaver **企业版** 24.0.0（闭源、要自己填 license key）。
+    #   dbeaver-ee.nix —— DBeaver **企业版** 26.1.0（闭源、要自己填 license key）。
     #     不能用 pkgs.dbeaver-bin：那个 derivation 的 url 写死了 CE 的 GitHub releases，
     #     而且版本是 26.2.0。EE 走 downloads.dbeaver.net/enterprise/<ver>/。
     #   sqlkit.nix —— SqlKit（Tauri 2 / Apache-2.0），nixpkgs 查无此包，解上游 deb。

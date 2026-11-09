@@ -1,28 +1,30 @@
 { pkgs, ... }:
 
 let
-  # DBeaver **Enterprise Edition** 24.0.0。
+  # DBeaver **Enterprise Edition** 26.1.0。
   #
   # 为什么不直接用 nixpkgs 的 `dbeaver-bin`：那个包写死了 CE（Community）——
   #   url = github.com/dbeaver/dbeaver/releases/.../dbeaver-ce-${version}-linux-x86_64.tar.gz
   # 而 CE 和 EE 是两个不同的发行物：EE 不在 GitHub releases 上，走的是
   # downloads.dbeaver.net/enterprise/<ver>/。另外 dbeaver-bin 锁的是 26.2.0，
-  # 这里要的是 **24.0**。所以只能自己起一个 derivation，但 installPhase 照抄
+  # 这里要的是 **26.1**。所以只能自己起一个 derivation，但 installPhase 照抄
   # dbeaver-bin 那套已经验证过的写法（substitute desktop、删 jre/、autoPatchelf）。
   #
-  # 版本只有 24.0.**0** 可选：dbeaver.com/files/ 的 EE 归档每个 minor 只留 `.0`
-  # （24.0.0 / 24.1.0 / 24.2.0 / 24.3.0），没有 CE 那边的 24.0.1…24.0.5。
-  # 归档索引 https://dbeaver.com/files/24.0.0/ 里列出的就是下面这个 URL。
+  # 版本只有 26.1.**0** 可选：dbeaver.com/files/ 的 EE 归档每个 minor 只留 `.0`
+  # （26.0.0 / 26.1.0 / 26.2.0），没有 CE 那边的 26.1.1…26.1.5。
+  # 归档索引 https://dbeaver.com/files/26.1.0/ 里列出的就是下面这个 URL。
+  # 注意 26.x 起 tarball 命名从 `linux.gtk.x86_64` 改成了 `linux-x86_64`。
   #
   # sha256 取自官方 checksum 目录（不是我自己算完就信）：
-  #   https://downloads.dbeaver.net/enterprise/24.0.0/checksum/dbeaver-ee-24.0.0-linux.gtk.x86_64.tar.gz.sha256
-  #     = b2e439b8ad9c13144112cebfe44f4c2d654a9a05e76769e1c1732d7cbd1710b7
+  #   https://downloads.dbeaver.net/enterprise/26.1.0/checksum/dbeaver-ee-26.1.0-linux-x86_64.tar.gz.sha256
+  #     = 70f7d7e88baf0868490a9e950d3845bc04c7189170fa95f5ec19a289db5eeaee
   # 实测整包流式 sha256 与它逐字节一致，转成 SRI 就是下面这行。
   #
   # 两个变体的取舍：tarball 有带 JRE 和不带 JRE（-nojdk）两种。这里取**带 JRE**的那个，
   # 但仍然把包里的 jre/ 删掉、改用 nixpkgs 的 openjdk21 —— 和 dbeaver-bin 的做法一致：
   # 自带 JRE 是上游编好的第三方二进制，既白占 store 空间，又拿不到安全更新。
-  # dbeaver.ini 里 `-Dosgi.requiredJavaVersion=17`，21 满足。
+  # dbeaver.ini 里 `-Dosgi.requiredJavaVersion=21`，openjdk21 正好满足；26.x 的袖珍
+  # JRE 还缺 java.instrument 模块，换成完整 JDK 后 `-javaagent` 才能用。
   #
   # **license 不在这份配置里**：EE 是付费闭源产品，装完必须在 GUI 里
   # Help → License → Edit License 填自己的 key（或拷 license.json 到工作区
@@ -30,7 +32,7 @@ let
   # 没 key 也能启动，但企业版特性（Cloud Sync、NoSQL 高级支持等）是锁住的。
   # 刻意不把 key 写进仓库：AGENTS.md 第 8 节第 1 条，密钥一律不入库。
   #
-  # javaagent：dbeaver-agent 24.0 的补丁构建（~/90-github/dbeaver-agent24）。
+  # javaagent：dbeaver-agent 26.1 的补丁构建（~/90-github/dbeaver-agent-new）。
   # store 只读，改不了包里的 dbeaver.ini，所以这里用 `cp -r --no-preserve=all`
   # 拷一份可写的出来再追加。两个坑：
   #   - `-vmargs` 必须是 ini 的**最后一段**，它后面的行全归 JVM；agent 参数只能
@@ -38,15 +40,15 @@ let
   #   - `-javaagent:` 冒号后**不能有空格**，路径必须绝对 —— ini 没有变量展开，
   #     相对路径按 dbeaver 二进制所在目录解析，所以 agent jar 的路径被硬编码进
   #     store（重新 mvn package 若换了文件名/位置，要同步改下面这行并 rebuild）。
-  agentJar = "/home/keith/90-github/dbeaver-agent24/dbeaver-agent-24.0/target/dbeaver-agent.jar";
+  agentJar = "/home/keith/90-github/dbeaver-agent-new/target/dbeaver-agent-26.1-SNAPSHOT-jar-with-dependencies.jar";
 
   dbeaver-ee = pkgs.stdenvNoCC.mkDerivation (finalAttrs: {
     pname = "dbeaver-ee";
-    version = "24.0.0";
+    version = "26.1.0";
 
     src = pkgs.fetchurl {
-      url = "https://downloads.dbeaver.net/enterprise/${finalAttrs.version}/dbeaver-ee-${finalAttrs.version}-linux.gtk.x86_64.tar.gz";
-      hash = "sha256-suQ5uK2cExRBEs6/5E9MLWVKmgXnZ2nhwXMtfL0XELc=";
+      url = "https://downloads.dbeaver.net/enterprise/${finalAttrs.version}/dbeaver-ee-${finalAttrs.version}-linux-x86_64.tar.gz";
+      hash = "sha256-cPfX6IuvCGhJCp6VDThFvATHGJFw+pX17Bmiidte6u4=";
     };
 
     sourceRoot = "dbeaver";
