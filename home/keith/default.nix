@@ -19,6 +19,7 @@
     ../../modules/home/noctalia.nix
     ../../modules/home/rime.nix
     ../../modules/home/ai/deepseek-harness.nix
+    ../../modules/home/ai/pi.nix
     ../../modules/home/browsers.nix
     ../../modules/home/apps.nix
     ../../modules/home/wechat.nix
