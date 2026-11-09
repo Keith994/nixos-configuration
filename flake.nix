@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
-    # 只为**个别包**引入 unstable（目前是 wechat 和 gui-for-singbox）。
+    # 只为**个别包**引入 unstable（目前是 wechat、gui-for-singbox 和 pi）。
     # 刻意 **不加** inputs.nixpkgs.follows —— 加了就等于又换回 26.05 的包，等于没换。
     # 也刻意不把它用在系统上：outputs 里只 import 出一个独立实例 pkgsUnstable，
     # 取到的包自带它那份 GTK/WebKit 闭包，与系统 pkgs 并存，不会牵动全系统重新求值/重建。
@@ -57,8 +57,8 @@
       system = "x86_64-linux";
       username = "keith";
 
-      # 独立于系统 nixpkgs 的实例，目前服务 wechat（modules/home/wechat.nix）和
-      # gui-for-singbox（modules/home/apps.nix）。模块要拿到它就分别走 specialArgs /
+      # 独立于系统 nixpkgs 的实例，目前服务 wechat（modules/home/wechat.nix）、
+      # gui-for-singbox（modules/home/apps.nix）和 pi（modules/home/ai/pi.nix）。模块要拿到它就分别走 specialArgs /
       # home-manager.extraSpecialArgs —— 两边都得传，别只传系统侧。
       # config 里只放行 wechat 这一个 unfree 名字：它是闭源二进制，不放行会直接求值失败；
       # 其余保持默认的 allowUnfree = false，这样将来再有 unfree 包进来是**构建报错**，

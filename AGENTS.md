@@ -12,7 +12,7 @@
 | 主机 | `nixos-adol`（`networking.hostName = "adol"`） |
 | 用户 | `keith`（属组 `wheel`、`networkmanager`、`docker`、`pcap`、`wireshark`；后两个是抓包免 sudo 用的，见 `modules/nixos/packet-capture.nix`） |
 | 系统 / stateVersion | `26.05` |
-| 输入 | `nixpkgs` → `nixos-26.05`；`home-manager` → `release-26.05`（follows nixpkgs）；`noctalia` → `github:noctalia-dev/noctalia/cachix`（**不** follows，见第 8 节第 14 条）；`zen-browser` → `github:0xc000022070/zen-browser-flake`（两个 follows 都加，见第 8 节第 12 条）；`nixpkgs-unstable` → `nixos-unstable`（**不** follows，只给 wechat 和 gui-for-singbox 两个包用，见第 8 节第 15、17、19 条）；`nix-cachyos-kernel` → `github:xddxdd/nix-cachyos-kernel/release`（**不** follows，CachyOS 内核用，见第 8 节第 21 条） |
+| 输入 | `nixpkgs` → `nixos-26.05`；`home-manager` → `release-26.05`（follows nixpkgs）；`noctalia` → `github:noctalia-dev/noctalia/cachix`（**不** follows，见第 8 节第 14 条）；`zen-browser` → `github:0xc000022070/zen-browser-flake`（两个 follows 都加，见第 8 节第 12 条）；`nixpkgs-unstable` → `nixos-unstable`（**不** follows，只给 wechat、gui-for-singbox、pi 三个包用，见第 8 节第 15、17、19 条）；`nix-cachyos-kernel` → `github:xddxdd/nix-cachyos-kernel/release`（**不** follows，CachyOS 内核用，见第 8 节第 21 条） |
 | 时区 / 桌面 | `Asia/Shanghai` / niri + Noctalia(v5) + noctalia-greeter 登录器 |
 | 上游远端 | `git@github.com:Keith994/nixos-configuration.git`（本地目录名是 `~/nix-config`） |
 
@@ -30,7 +30,7 @@ hosts/nixos-adol/
 home/keith/default.nix        # home-manager 入口：imports 列表 + home.* 基础设置
 modules/nixos/*.nix           # 系统级模块
 modules/home/*.nix            # 用户级模块（home-manager）
-modules/home/ai/*.nix         # AI 工具（dsh）
+modules/home/ai/*.nix         # AI 工具（dsh / pi）
 dotfiles/                     # 真实配置文件，按程序分目录
   nvim/  niri/  ghostty/  foot/  tmux/  yazi/  rime/  noctalia/  starship/  fontconfig/  mpv/
 scripts/                      # 手工小工具（nix-update.sh、mqtt.sh、redis.sh），按需软链进 ~/.local/bin
@@ -126,6 +126,7 @@ nixfmt <file.nix>
 | `wechat.nix` | 微信：**包**取自 `pkgsUnstable`（26.05 = 4.1.1.4，unstable = 4.1.1.8），并自己套一层 `symlinkJoin` + `wrapProgram --set QT_IM_MODULE fcitx` —— 少了这个变量一个中文都打不进去（见第 8 节第 19 条） |
 | `fontconfig.nix` | 把 `dotfiles/fontconfig/fonts.conf` 软链到 `~/.config/fontconfig/fonts.conf`（见第 8 节第 11 条） |
 | `ai/deepseek-harness.nix` | 打包 `dsh` 命令（见第 7 节） |
+| `ai/pi.nix` | `pkgsUnstable.pi-coding-agent`（26.05 只有 0.75.4，unstable 是 1.5.0；见第 8 节第 17 条） |
 
 ## 5. dotfiles 的挂载方式（决定改完要不要 rebuild）
 
@@ -411,7 +412,7 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
     不设 `XCURSOR_THEME` 时 xcursor 会去找名为 `default` 的主题（本机没有），于是合成器自己画的
     边缘拖拽/移动光标、以及 Qt / XWayland / Electron 各自回退到内置箭头，看着就是"光标混用"。
     niri 的 `environment {}` **只在会话启动时生效**，改完要重开会话。
-17. 单个包吃 unstable 的标准姿势（wechat 和 gui-for-singbox 都走这套，见第 15、19 条）：
+17. 单个包吃 unstable 的标准姿势（wechat、gui-for-singbox、pi 都走这套，见第 15、19 条）：
     - `flake.nix` 里有第二个 nixpkgs input `nixpkgs-unstable`（`nixos-unstable`），**不加** follows，
       只 `import` 成一个独立实例 `pkgsUnstable`，经 `specialArgs` 传给系统模块、经
       `home-manager.extraSpecialArgs` 传给用户模块（两边都要给）。
