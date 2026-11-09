@@ -2,6 +2,7 @@ return {
   {
     "milanglacier/minuet-ai.nvim",
     event = "InsertEnter",
+    enabled = false,
     opts = {
       -- 走 Ollama 的 OpenAI 兼容 /v1/completions（支持 prompt + suffix 的 FIM），
       -- 比 chat 模板更适合内联补全。
@@ -37,34 +38,34 @@ return {
       },
     },
   },
-  {
-    "saghen/blink.cmp",
-    optional = true,
-    dependencies = { "milanglacier/minuet-ai.nvim" },
-    opts = function(_, opts)
-      local minuet = require("minuet")
-
-      -- 手动触发作为兜底；正常输入时由 blink 自动请求，不需要按。
-      opts.keymap = opts.keymap or {}
-      opts.keymap["<A-y>"] = minuet.make_blink_map()
-
-      opts.sources = opts.sources or {}
-      opts.sources.providers = opts.sources.providers or {}
-      opts.sources.providers.minuet = {
-        name = "minuet",
-        module = "minuet.blink",
-        async = true,
-        -- 与 request_timeout 对齐，避免 blink 先超时丢掉结果。
-        timeout_ms = 10000,
-        -- 比 LSP 候选更靠前，和之前 copilot source 一样优先展示。
-        score_offset = 100,
-      }
-
-      opts.sources.default = opts.sources.default or {}
-      if not vim.tbl_contains(opts.sources.default, "minuet") then
-        table.insert(opts.sources.default, "minuet")
-      end
-      return opts
-    end,
-  },
+  -- {
+  --   "saghen/blink.cmp",
+  --   optional = true,
+  --   dependencies = { "milanglacier/minuet-ai.nvim" },
+  --   opts = function(_, opts)
+  --     local minuet = require("minuet")
+  --
+  --     -- 手动触发作为兜底；正常输入时由 blink 自动请求，不需要按。
+  --     opts.keymap = opts.keymap or {}
+  --     opts.keymap["<A-y>"] = minuet.make_blink_map()
+  --
+  --     opts.sources = opts.sources or {}
+  --     opts.sources.providers = opts.sources.providers or {}
+  --     opts.sources.providers.minuet = {
+  --       name = "minuet",
+  --       module = "minuet.blink",
+  --       async = true,
+  --       -- 与 request_timeout 对齐，避免 blink 先超时丢掉结果。
+  --       timeout_ms = 10000,
+  --       -- 比 LSP 候选更靠前，和之前 copilot source 一样优先展示。
+  --       score_offset = 100,
+  --     }
+  --
+  --     opts.sources.default = opts.sources.default or {}
+  --     if not vim.tbl_contains(opts.sources.default, "minuet") then
+  --       table.insert(opts.sources.default, "minuet")
+  --     end
+  --     return opts
+  --   end,
+  -- },
 }
