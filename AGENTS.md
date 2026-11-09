@@ -106,6 +106,7 @@ nixfmt <file.nix>
 | --- | --- |
 | `shell.nix` | zsh：fzf-tab、自动建议、语法高亮、history、别名 `nr/nb/nc/nu/nup/nixcfg`（`nr`/`nb`/`nu`/`nup` 包了代理，`nc` 刻意没包）；末尾 `source ~/.ai-api.zsh`（仓库外密钥） |
 | `cli.nix` | fzf、zoxide、eza、bat、direnv(+nix-direnv)，以及 ripgrep/fd/jq/htop/btop 等 |
+| `open.nix` | 终端的 `open`（`writeShellApplication`）：按 MIME 挑程序 —— 目录→yazi、URL→xdg-open、`text/*` 与源码→nvim(前台)、图片→imv、音视频→mpv、PDF→zathura/mupdf/okular、Office→libreoffice，其余兜底 xdg-open。**程序一律按 PATH 探测、不写进 `runtimeInputs`**（nvim/mpv/imv/yazi 由别的模块装，重复声明会多拉闭包，且 mpv 会绕开 `media.nix` 那个挂了 mpris 的 override）。不直接 alias 到 `xdg-open` 的原因：`~/.config/mimeapps.list` 是仓库外手工文件，里面只有 `image/*`→imv 和 http(s)→Chrome，`text/plain` / Office / pdf 都没默认项（见第 8 节第 10 条） |
 | `git.nix` | `programs.git`：main 分支、fetch.prune、editor=nvim、ignore 规则；身份信息从 `~/.config/git/local.conf` include |
 | `starship.nix` | starship 提示符；`~/.config/starship.toml` 是指向 `dotfiles/starship/starship.toml` 的 out-of-store 软链（**必须可写**：noctalia 每次换壁纸都往里注入调色板块，所以那个文件被忽略、手写原始版跟踪在 `starship.toml.orig`；activation 在它缺失时从 `.orig` 播种）；`configPath` 必须与文件落点一致（见第 8 节第 2 条） |
 | `nvim.nix` | EDITOR/VISUAL=nvim、`vi`/`vim` 别名、编译依赖；`~/.config/nvim` 软链到仓库 |

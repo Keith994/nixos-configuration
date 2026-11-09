@@ -3,6 +3,8 @@
 {
   imports = [
     ../../modules/home/cli.nix
+    # 终端的 `open`：按文件类型挑程序（文本进 nvim、图片 imv、音视频 mpv，其余走 xdg-open）。
+    ../../modules/home/open.nix
     ../../modules/home/git.nix
     ../../modules/home/shell.nix
     ../../modules/home/starship.nix
