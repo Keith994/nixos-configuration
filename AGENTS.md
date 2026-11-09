@@ -91,7 +91,7 @@ nixfmt <file.nix>
 | `shell.nix` | 系统层启用 zsh，并把普通用户 shell 设为 zsh（不影响 root） |
 | `fonts.nix` | 字体包都在这：maple-mono.NF-CN（拉丁/终端）、lxgw-wenkai（中文）、nerd-fonts.jetbrains-mono、nerd-fonts.symbols-only。fonts.conf 里点名的 family 必须能在这些包里找到（见第 8 节第 11 条） |
 | `icons.nix` | 图标 / 光标主题包：papirus、adwaita（托盘与 symbolic 图标）、`bibata-cursors`（光标本体，装在 system 级是为了 greeter 用户也解析得到，见第 8 节第 16 条）、glib/gsettings-desktop-schemas |
-| `compat.nix` | `programs.nix-ld`，用于跑非 Nix 的动态链接二进制 |
+| `compat.nix` | `programs.nix-ld`，用于跑非 Nix 的动态链接二进制；额外塞了 `icu`（mason 的 marksman 这类预编译 .NET 工具要它，见第 8 节第 25 条） |
 | `niri.nix` | `programs.niri` + xwayland-satellite + ozone Wayland 环境变量；屏幕共享改走 `xdg.portal.wlr`（nixpkgs 模块默认给的是 portal-gnome + niri 的 Mutter ScreenCast 路径，飞书那类消费端格式协商不上，见第 8 节第 22 条） |
 | `noctalia.nix` | noctalia shell 需要的系统服务：蓝牙、upower、power-profiles-daemon（wifi 在 base.nix） |
 | `greetd.nix` | noctalia-greeter：greetd + `greeter.toml`（tmpfiles）+ AccountsService/polkit（见第 8 节第 8 条） |
@@ -741,6 +741,23 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
     而且 `nix-daemon` 根本不继承 shell 变量（同第 21 条那个坑）。
     撤销放行的两条路：等 nixpkgs 清掉 pnpm 10 的 `knownVulnerabilities`，
     或工程锁文件迁到 10.0 之后改用 pnpm 11 并删掉这一行。
+
+25. mason 装的 `marksman`（Markdown LSP）起不来，报
+    `Process terminated. Couldn't find a valid ICU package installed on the system`（退出码 134）。
+    根因不在 nvim 配置：mason 那个包是 GitHub Releases 的 **.NET 自包含二进制**
+    （`marksman-linux-x64`，单文件 .NET 9），启动时 `dlopen("libicuuc.so.<版本>")` 做全球化支持。
+    NixOS 没有 `/usr/lib`，而 `programs.nix-ld` 的默认库集合（zlib/openssl/systemd/…）里**没有 icu**，
+    所以它在 `System.Globalization.GlobalizationMode` 的静态构造里直接 `FailFast`；
+    堆栈里的 `System.CommandLine` / `ResourceManager` 只是最先碰本地化的地方，别去查 F# 代码。
+    修法：`modules/nixos/compat.nix` 的 `programs.nix-ld.libraries = [ pkgs.icu ]`。
+    nix-ld 会把 `/run/current-system/sw/share/nix-ld/lib` 追加进 `LD_LIBRARY_PATH`，
+    走 nix-ld 的预编译 ELF（含其它 .NET 工具）都能解析到；**改完必须 rebuild**（系统层）。
+    手工验证不用等 rebuild：`LD_LIBRARY_PATH=$(nix eval --raw nixpkgs#icu)/lib marksman --version`
+    能打出日期就说明只缺这一个库。
+    **不要**改成 `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`：它会让所有 .NET 程序失去区域/排序
+    支持，而且只在设了变量的进程里生效（`nix-daemon` 更是完全不继承 shell 变量，同第 21 条）。
+    备选方案是换成 nixpkgs 的 `marksman`（`dotnetCorePackages` 打包，自己链好 icu，类似第 23 条
+    jdtls 的做法），代价是要把 mason 那份从 `ensure_installed` 摘掉并保证 mason 的 `bin/` 不遮蔽它。
 
 ## 9. 改动流程（checklist）
 
