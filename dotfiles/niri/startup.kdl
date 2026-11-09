@@ -4,6 +4,7 @@
 // spawn-at-startup "gsettings" "set" "org.gnome.desktop.interface" "cursor-theme" "Bibata-Modern-Ice"
 // spawn-at-startup "gsettings" "set" "org.gnome.desktop.interface" "cursor-size" "24"
 spawn-sh-at-startup "fcitx5 -r -d"
+spawn-at-startup "emacs --daemon"
 // noctalia v5：bar / 通知 / 剪贴板 / 锁屏 / OSD 全在它里面，polkit 认证仍由上面那条 polkit-gnome 负责
 // （所以 dotfiles/noctalia/config.toml 里 [shell] polkit_agent 保持默认关闭，避免两个 agent 抢 PolicyKit1）
 // 启动的是 wrapper 而不是 noctalia：wrapper 里单独注入了 clash-verge 的 mixed-port（10800），
