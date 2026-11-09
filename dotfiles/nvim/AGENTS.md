@@ -49,7 +49,6 @@
     │   ├── aerial.lua       # 代码大纲
     │   ├── noice.lua        # 通知系统
     │   ├── obsidian.lua     # Obsidian集成
-    │   ├── copilot.lua      # GitHub Copilot
     │   ├── blink-cmp.lua    # 代码补全
     │   ├── avante.lua       # 高级功能
     │   ├── hurl.lua         # HTTP测试工具
@@ -252,7 +251,7 @@
 ## 未来改进方向
 
 1. **更多语言支持**：添加TypeScript、C++等语言配置
-2. **AI集成**：增强Copilot和其他AI工具集成
+2. **AI集成**：增强 Ollama/minuet 本地补全
 3. **性能监控**：添加启动时间和运行时性能监控
 4. **配置UI**：开发图形化配置界面
 5. **文档完善**：添加更多使用示例和教程

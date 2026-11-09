@@ -101,7 +101,6 @@ map("n", "<leader>bc", function() Snacks.bufdelete.other() end, { desc = "Delete
 -- Clear search and stop snippet on escape
 map({ "i", "n", "s" }, "<esc>", function()
   vim.cmd("noh")
-  -- require("copilot-lsp.nes").clear()
   return "<esc>"
 end, { expr = true, desc = "Escape and Clear hlsearch" })
 

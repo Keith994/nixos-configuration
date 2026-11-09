@@ -18,6 +18,7 @@
       ../../modules/nixos/greetd.nix
       ../../modules/nixos/fcitx5.nix
       ../../modules/nixos/clash-verge.nix
+      ../../modules/nixos/ollama.nix
       ../../modules/nixos/docker.nix
       ../../modules/nixos/packet-capture.nix
       ../../modules/nixos/vmware-host.nix

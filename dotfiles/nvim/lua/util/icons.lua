@@ -54,7 +54,7 @@ return {
     Collapsed = " ",
     Constant = "󰏿 ",
     Constructor = " ",
-    Copilot = " ",
+    
     Enum = " ",
     EnumMember = " ",
     Event = " ",

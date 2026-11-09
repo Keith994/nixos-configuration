@@ -26,7 +26,7 @@ return {
       "MunifTanjim/nui.nvim",
     },
     opts = {
-      provider = "copilot",
+provider = "openrouter",
       -- provider = "openrouter",
       auto_suggestions_provider = "deepseek_cmp",
       suggestion = {
@@ -155,19 +155,7 @@ return {
           })
         end,
       },
-      { -- if copilot.lua is available, default to copilot provider
-        "zbirenbaum/copilot.lua",
-        optional = true,
-        specs = {
-          {
-            "yetone/avante.nvim",
-            opts = {
-              -- provider = "copilot",
-              -- auto_suggestions_provider = "copilot",
-            },
-          },
-        },
-      },
+      
       {
         -- make sure `Avante` is added as a filetype
         "MeanderingProgrammer/render-markdown.nvim",

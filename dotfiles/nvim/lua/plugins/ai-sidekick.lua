@@ -14,7 +14,7 @@ return {}
 --   "folke/sidekick.nvim",
 --   opts = {
 --     nes = {
---       enabled = true, -- If the user doesn't have the copilot LSP running internally this gets set as false
+
 --     },
 --     -- add any options here
 --     cli = {
