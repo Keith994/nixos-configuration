@@ -25,7 +25,7 @@
     # 带上 —— 所以必须在这儿自己配一份。少了它，Clang+ThinLTO 的内核要在笔记本上本地编，很久。
     #
     # 这里用的是上游 README 列出的**备用镜像** cache.xinux.uz，而不是作者自己的
-    # attic.xuyh0120.win —— 这一条差别是决定性的。本机实测：attic 只有走 clash 的 10800 才连得上、
+    # attic.xuyh0120.win —— 这一条差别是决定性的。本机实测：attic 只有走外部代理的 10800 才连得上、
     # **直连不通**，而 cache.xinux.uz / cache.nixos.org / noctalia.cachix.org 都**直连可达**。
     # 为什么这很关键：modules/home/shell.nix 里 nr/nb/nu/nup 的代理**只作用于客户端**（flake 输入
     # 抓取），而**下载 store 路径的是 nix-daemon**，它由 systemd 拉起、不继承任何 shell 变量
@@ -36,7 +36,7 @@
     # 代价是信任方多一个：镜像的 narinfo 是**重新签名**的（整个文件只有 cache.xinux.uz 一条 Sig），
     # 所以信的是镜像维护者而不是上游 CI 作者；上游 README 也明确声明不保证这个缓存的安全与可用性。
     # 想换回作者自己的 attic（只信一把 key），得先让 daemon 够得到它：开 TUN，或给 daemon 配代理
-    # （记得把 cache.nixos.org / cachix 放进 no_proxy，否则 clash 没起时连它们一起断）。
+    # （记得把 cache.nixos.org / cachix 放进 no_proxy，否则代理没起时连它们一起断）。
     #
     # 附带一条免得白折腾：`modules-shrunk` 那个 output **任何公共缓存里都不会有** —— 它依赖本机的
     # rootModules，逐机不同。但它只是纯 shell 后处理（modules-closure.sh：按 rootModules 挑模块 +
@@ -76,7 +76,7 @@
       "feishu"
       "claude-code"
       "opencode"
-      "vscode"
+      # "vscode"
 
       # VMware Workstation（宿主）：闭源二进制，meta.license = unfree 且
       # redistributable = false。个人用途自 2024-11 起免费（Broadcom 改过 EULA），

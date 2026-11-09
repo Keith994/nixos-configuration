@@ -10,7 +10,7 @@
     feishu
     claude-code
     opencode
-    vscode
+    # vscode
 
     # Emacs 同时提供 emacsclient，供 niri 的编辑器快捷键调用。
     pkgsUnstable.emacs-pgtk
@@ -26,7 +26,7 @@
     telegram-desktop
 
     # sing-box 的图形壳（GUI.for.SingBox，Vue3 + Wails/WebKitGTK）。四点要注意：
-    # 1) **包必须取 unstable**（跟 wechat / clash-verge 同一套姿势）：26.05 里 pin 的是
+    # 1) **包必须取 unstable**（跟 wechat 同一套姿势）：26.05 里 pin 的是
     #    1.23.2，而上游已经把 `v1.23.2` 这个 tag 删了（`git/ref/tags/v1.23.2` → 404），
     #    fetchFromGitHub 永久失败，rebuild 会停在 "cannot download source from any mirror"。
     #    unstable 现在是 1.27.0，tag 还在。

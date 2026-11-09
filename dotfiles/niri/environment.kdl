@@ -16,7 +16,6 @@ environment {
     // 以前整个会话没设过 XCURSOR_THEME，xcursor 会去找名为 "default" 的主题（本机没有），
     // 结果 niri 自己画的窗口边缘/移动光标、以及 XWayland/Electron 这些不读 GTK 设置的程序
     // 各自回退到内置箭头。主题包在 modules/nixos/icons.nix（system 级，greeter 也用它）。
-    // 和 dotfiles/umbriel/config.toml 的 [input.cursor]/[environment] 保持一致。
     XCURSOR_THEME "Bibata-Modern-Ice"
     XCURSOR_SIZE "24"
     // CLUTTER_BACKEND "wayland"
@@ -34,13 +33,13 @@ environment {
     //SACLE
     // GDK_DPI_SCALE "1.67"
 
-    // Clash Verge 的「系统代理」只写 GNOME 的 dconf，而 niri 不是 GNOME：
+    // 代理的「系统代理」通常只写 GNOME 的 dconf，而 niri 不是 GNOME：
     // Chromium/Electron 在非 GNOME 桌面下根本不读 gsettings（只认环境变量），
     // 所以这里直接给 niri 及其所有子进程导出，等于把 modules/home/shell.nix 里
     // 那个 vpn 别名（只对跑了 vpn 的交互式 shell 生效）变成整个会话的默认值。
-    // 端口取 dotfiles/niri 之外 clash-verge.yaml 的 mixed-port；它同时支持
+    // 端口取外部代理（GUI.for.SingBox 等）的 mixed-port；它同时支持
     // HTTP 和 SOCKS5，所以 all_proxy 用 socks5 也能复用同一个口。
-    // 注意：clash-verge 没在跑（或改了端口）时，带这些变量的程序会直接连不上网。
+    // 注意：代理没在跑（或改了端口）时，带这些变量的程序会直接连不上网。
     // 只想让 noctalia 走代理时别打开下面三行（那是整个会话级别的），改用
     // modules/home/noctalia.nix 里的 noctalia-proxy wrapper。
     // http_proxy "http://127.0.0.1:10800"

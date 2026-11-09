@@ -13,11 +13,9 @@
 
       ../../modules/nixos/compat.nix
       ../../modules/nixos/niri.nix
-      ../../modules/nixos/umbriel.nix
       ../../modules/nixos/noctalia.nix
       ../../modules/nixos/greetd.nix
       ../../modules/nixos/fcitx5.nix
-      ../../modules/nixos/clash-verge.nix
       ../../modules/nixos/ollama.nix
       ../../modules/nixos/docker.nix
       ../../modules/nixos/packet-capture.nix

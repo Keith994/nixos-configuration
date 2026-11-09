@@ -12,8 +12,8 @@
 | 主机 | `nixos-adol`（`networking.hostName = "adol"`） |
 | 用户 | `keith`（属组 `wheel`、`networkmanager`、`docker`、`pcap`、`wireshark`；后两个是抓包免 sudo 用的，见 `modules/nixos/packet-capture.nix`） |
 | 系统 / stateVersion | `26.05` |
-| 输入 | `nixpkgs` → `nixos-26.05`；`home-manager` → `release-26.05`（follows nixpkgs）；`noctalia` → `github:noctalia-dev/noctalia/cachix`（**不** follows，见第 8 节第 14 条）；`zen-browser` → `github:0xc000022070/zen-browser-flake`（两个 follows 都加，见第 8 节第 12 条）；`umbriel` → `git+https://github.com/noctalia-dev/umbriel`（**不** follows，见第 8 节第 15 条）；`nixpkgs-unstable` → `nixos-unstable`（**不** follows，只给 clash-verge 和 wechat 两个包用，见第 8 节第 17、19 条）；`nix-cachyos-kernel` → `github:xddxdd/nix-cachyos-kernel/release`（**不** follows，CachyOS 内核用，见第 8 节第 21 条） |
-| 时区 / 桌面 | `Asia/Shanghai` / niri + Noctalia(v5) + noctalia-greeter 登录器；会话选择器里另有 Umbriel（可选测试会话，默认会话仍是 niri，见第 8 节第 15 条） |
+| 输入 | `nixpkgs` → `nixos-26.05`；`home-manager` → `release-26.05`（follows nixpkgs）；`noctalia` → `github:noctalia-dev/noctalia/cachix`（**不** follows，见第 8 节第 14 条）；`zen-browser` → `github:0xc000022070/zen-browser-flake`（两个 follows 都加，见第 8 节第 12 条）；`nixpkgs-unstable` → `nixos-unstable`（**不** follows，只给 wechat 和 gui-for-singbox 两个包用，见第 8 节第 15、17、19 条）；`nix-cachyos-kernel` → `github:xddxdd/nix-cachyos-kernel/release`（**不** follows，CachyOS 内核用，见第 8 节第 21 条） |
+| 时区 / 桌面 | `Asia/Shanghai` / niri + Noctalia(v5) + noctalia-greeter 登录器 |
 | 上游远端 | `git@github.com:Keith994/nixos-configuration.git`（本地目录名是 `~/nix-config`） |
 
 只有**一个** host、**一个**用户。`flake.nix` 里硬编码 `system = "x86_64-linux"`、`username = "keith"`，
@@ -32,7 +32,7 @@ modules/nixos/*.nix           # 系统级模块
 modules/home/*.nix            # 用户级模块（home-manager）
 modules/home/ai/*.nix         # AI 工具（dsh）
 dotfiles/                     # 真实配置文件，按程序分目录
-  nvim/  niri/  umbriel/  ghostty/  foot/  tmux/  yazi/  rime/  noctalia/  starship/  fontconfig/  mpv/
+  nvim/  niri/  ghostty/  foot/  tmux/  yazi/  rime/  noctalia/  starship/  fontconfig/  mpv/
 scripts/                      # 手工小工具（nix-update.sh、mqtt.sh、redis.sh），按需软链进 ~/.local/bin
 deploy/                       # 本地服务的 docker compose（不在 Nix 里跑服务）
   mosquitto/                  #   eclipse-mosquitto:2，127.0.0.1:1883 + 9001
@@ -85,7 +85,7 @@ nixfmt <file.nix>
 
 | 文件 | 作用 |
 | --- | --- |
-| `base.nix` | networkmanager、时区、flakes 实验特性、zram + `vm.swappiness`（唯一 swap，见第 8 节第 18 条）、git/neovim、`allowUnfreePredicate`(google-chrome / obsidian)、`permittedInsecurePackages`(pnpm-10.34.0，不放行整个 flake 求值失败，见第 8 节第 24 条)；Cachix + 备用镜像 substituter（noctalia 与 CachyOS 内核，后者见第 8 节第 21 条） |
+| `base.nix` | networkmanager、时区、flakes 实验特性、zram + `vm.swappiness`（唯一 swap，见第 8 节第 18 条）、git/neovim、`allowUnfreePredicate`(google-chrome / obsidian / vscode，vscode 当前未启用)、`permittedInsecurePackages`(pnpm-10.34.0，不放行整个 flake 求值失败，见第 8 节第 24 条)；Cachix + 备用镜像 substituter（noctalia 与 CachyOS 内核，后者见第 8 节第 21 条） |
 | `kernel.nix` | CachyOS 内核：`overlays.pinned` + `linuxPackages-cachyos-latest-lto-zen4` + `boot.kernelParams = [ "amd_pstate=active" ]`。**不**替换本仓库 nixpkgs；内核产物走备用镜像缓存，见第 8 节第 21 条 |
 | `ssh.nix` | openssh：密码登录开，root 登录关 |
 | `shell.nix` | 系统层启用 zsh，并把普通用户 shell 设为 zsh（不影响 root） |
@@ -93,10 +93,8 @@ nixfmt <file.nix>
 | `icons.nix` | 图标 / 光标主题包：papirus、adwaita（托盘与 symbolic 图标）、`bibata-cursors`（光标本体，装在 system 级是为了 greeter 用户也解析得到，见第 8 节第 16 条）、glib/gsettings-desktop-schemas |
 | `compat.nix` | `programs.nix-ld`，用于跑非 Nix 的动态链接二进制 |
 | `niri.nix` | `programs.niri` + xwayland-satellite + ozone Wayland 环境变量；屏幕共享改走 `xdg.portal.wlr`（nixpkgs 模块默认给的是 portal-gnome + niri 的 Mutter ScreenCast 路径，飞书那类消费端格式协商不上，见第 8 节第 22 条） |
-| `umbriel.nix` | `inputs.umbriel` 的 `programs.umbriel`：装包 + 注册一个 `Name=Umbriel` 的 wayland 会话 + portal（纯增量，默认会话仍是 niri，见第 8 节第 15 条） |
 | `noctalia.nix` | noctalia shell 需要的系统服务：蓝牙、upower、power-profiles-daemon（wifi 在 base.nix） |
 | `greetd.nix` | noctalia-greeter：greetd + `greeter.toml`（tmpfiles）+ AccountsService/polkit（见第 8 节第 8 条） |
-| `clash-verge.nix` | `programs.clash-verge`（serviceMode + `clash-verge` 组）；GUI 由 `dotfiles/niri/startup.kdl` 拉起，不用模块的 autoStart；**包**取自 `nixpkgs-unstable`（模块仍是 26.05 的，见第 8 节第 17 条） |
 | `fcitx5.nix` | fcitx5 + `waylandFrontend`，rime 引擎用 rime-ice |
 | `docker.nix` | `virtualisation.docker.enable`（daemon 由 systemd 管，用户组在 host 模块的 `extraGroups` 里声明） |
 | `packet-capture.nix` | 抓包工具的特权 wrapper：`programs.tcpdump`（挂 cap_net_raw → `pcap` 组）+ `programs.wireshark`（dumpcap 挂 cap_net_raw,cap_net_admin → `wireshark` 组；`package = pkgs.wireshark` 才带 GUI，默认只给 wireshark-cli）。两个组在 host 模块的 `extraGroups` 里，**不进组就只能 sudo 抓** |
@@ -106,7 +104,7 @@ nixfmt <file.nix>
 
 | 文件 | 作用 |
 | --- | --- |
-| `shell.nix` | zsh：fzf-tab、自动建议、语法高亮、history、别名 `nr/nb/nc/nu/nup/nixcfg`（`nr`/`nb`/`nu`/`nup` 包了 clash 代理，`nc` 刻意没包）；末尾 `source ~/.ai-api.zsh`（仓库外密钥） |
+| `shell.nix` | zsh：fzf-tab、自动建议、语法高亮、history、别名 `nr/nb/nc/nu/nup/nixcfg`（`nr`/`nb`/`nu`/`nup` 包了代理，`nc` 刻意没包）；末尾 `source ~/.ai-api.zsh`（仓库外密钥） |
 | `cli.nix` | fzf、zoxide、eza、bat、direnv(+nix-direnv)，以及 ripgrep/fd/jq/htop/btop 等 |
 | `git.nix` | `programs.git`：main 分支、fetch.prune、editor=nvim、ignore 规则；身份信息从 `~/.config/git/local.conf` include |
 | `starship.nix` | starship 提示符；`~/.config/starship.toml` 是指向 `dotfiles/starship/starship.toml` 的 out-of-store 软链（**必须可写**：noctalia 每次换壁纸都往里注入调色板块，所以那个文件被忽略、手写原始版跟踪在 `starship.toml.orig`；activation 在它缺失时从 `.orig` 播种）；`configPath` 必须与文件落点一致（见第 8 节第 2 条） |
@@ -117,7 +115,6 @@ nixfmt <file.nix>
 | `media.nix` | 看图 / 标注 / 播放一组：`pkgs.mpv.override`（挂 `mpvScripts.mpris`，让 noctalia 的媒体组件/媒体键能看到它）+ `dotfiles/mpv/{mpv.conf,input.conf}` 两个**单文件** out-of-store 软链（不整目录链：mpv 往 `~/.config/mpv/watch_later/` 写进度）；`programs.imv`（深色底 + 浮层 + vim 的 `n`/`N` 翻图。**没**配默认打开方式：`~/.config/mimeapps.list` 是仓库外的手工文件，要改直接 `xdg-mime default imv.desktop image/png`）；`programs.satty`（截图标注，只打开已有图片）+ `wl-clipboard`（satty 的 `copy-command` 要 `wl-copy`，顺便给终端用）—— `Mod+Shift+A` 走 `dotfiles/niri/scripts/satty-last.sh` 标注最新一张截图（见第 8 节第 5 条）；`pkgs.mpvpaper` + `pkgs.procps`（视频壁纸，手动开关，见第 8 节第 20 条） |
 | `yazi.nix` | yazi + 预览依赖；整个 `dotfiles/yazi` 目录 out-of-store 软链（`ya pack` 装的东西会直接落进仓库，见第 5 节） |
 | `niri.nix` | 整个 `dotfiles/niri` 目录 out-of-store 软链（noctalia 的 niri 模板要往这个目录写 `noctalia.kdl` 和 include 行，见第 5 节） |
-| `umbriel.nix` | `~/.config/umbriel` → `dotfiles/umbriel` 整目录 out-of-store 软链（noctalia 会写 `noctalia.toml`）；刻意不 import 上游 `homeModules.default`（见第 8 节第 15 条） |
 | `noctalia.nix` | `inputs.noctalia` 的 `programs.noctalia` 模块 + `dotfiles/noctalia/config.toml`（构建期 validate，见第 8 节第 14 条） |
 | `rime.nix` | 见第 6 节「Rime 特例」 |
 | `devtools.nix` | go / rustc / cargo / nodejs（24.x）/ yarn / **pnpm_10** / lazygit / lazydocker / trash-cli / tree-sitter 等。pnpm 刻意钉 10 而不是默认的 11：外部 pnpm 工程的锁文件多是 `lockfileVersion 9.0`，11 会改写它（10 被 nixpkgs 标成 insecure，放行写在 `base.nix`，见第 8 节第 24 条）。Java 一组：`javaJdk`(jdk21) + `JAVA_HOME`、maven、gradle，外加 **`jdt-language-server`**（nvim 的 jdtls 本体，经 `JDTLS_HOME` 暴露）和 **`google-java-format`**（conform 用），后两个为什么不走 mason 见第 8 节第 23 条 |
@@ -125,7 +122,7 @@ nixfmt <file.nix>
 | `iot.nix` | 物联网 / 串口 / MQTT / Redis 一组：`mqttui`、`mosquitto`（只要客户端）、**`redis`**（只要 `redis-cli`）、`mbpoll`、`picocom`（keith 不在 `dialout` 组，现在要 sudo）、`socat`。broker 与 Redis server 都不走 NixOS service，统一在 docker 里（见 `deploy/` 那节） |
 | `network.nix` | 网络排查一组：`nmap`（connect 扫描不需要特权）、`iperf3`（只当客户端，5201 没放行）、`grpcurl`。抓包那两个在系统层，见 `modules/nixos/packet-capture.nix` |
 | `browsers.nix` | 两个浏览器：`programs.chromium` + `pkgs.google-chrome`（强制 Wayland 与 fcitx5 IME）；`inputs.zen-browser` 的 `programs.zen-browser` 模块（beta 通道，命令行 `zen-beta`；nixpkgs 里没有这个包，见第 8 节第 12 条）。两个都**没**抢默认浏览器 |
-| `apps.nix` | 没有 `programs.*` 模块、也不需要额外包装参数的 GUI 应用（obsidian、localsend、telegram-desktop）。unfree 的要同步 `base.nix` 的白名单 |
+| `apps.nix` | 没有 `programs.*` 模块、也不需要额外包装参数的 GUI 应用（obsidian、localsend、telegram-desktop、libreoffice-fresh）+ `pkgsUnstable.emacs-pgtk`、`pkgsUnstable.gui-for-singbox`（代理图形壳，见第 8 节第 15 条）。unfree 的要同步 `base.nix` 的白名单；vscode 当前注释掉了 |
 | `wechat.nix` | 微信：**包**取自 `pkgsUnstable`（26.05 = 4.1.1.4，unstable = 4.1.1.8），并自己套一层 `symlinkJoin` + `wrapProgram --set QT_IM_MODULE fcitx` —— 少了这个变量一个中文都打不进去（见第 8 节第 19 条） |
 | `fontconfig.nix` | 把 `dotfiles/fontconfig/fonts.conf` 软链到 `~/.config/fontconfig/fonts.conf`（见第 8 节第 11 条） |
 | `ai/deepseek-harness.nix` | 打包 `dsh` 命令（见第 7 节） |
@@ -136,7 +133,7 @@ nixfmt <file.nix>
 
 | 目标 | 方式 | 改完需要 rebuild？ |
 | --- | --- | --- |
-| `nvim`、`ghostty`、`foot`、`niri`、`yazi`、`umbriel`（整目录） | `mkOutOfStoreSymlink` 指向 `~/nix-config/dotfiles/...` | 否，保存即生效（foot 要重启 server 才读新配置，见第 8 节第 13 条；niri 会自己重载，umbriel 热重载） |
+| `nvim`、`ghostty`、`foot`、`niri`、`yazi`（整目录） | `mkOutOfStoreSymlink` 指向 `~/nix-config/dotfiles/...` | 否，保存即生效（foot 要重启 server 才读新配置，见第 8 节第 13 条；niri 会自己重载） |
 | `mpv/mpv.conf`、`mpv/input.conf`（单文件） | `mkOutOfStoreSymlink` 指向 `~/nix-config/dotfiles/mpv/*`：**不**整目录链，mpv 要往 `~/.config/mpv/watch_later/` 写播放进度 | 否，保存即生效 |
 | `fontconfig/fonts.conf` | `xdg.configFile` 普通 source，落点 `~/.config/fontconfig/fonts.conf` | 是 |
 | `noctalia/config.toml` | `programs.noctalia.settings` 指向仓库文件，构建期先 `noctalia config validate` 再软链 | 是 |
@@ -146,12 +143,11 @@ nixfmt <file.nix>
 
 `mkOutOfStoreSymlink` 把**绝对路径**写死成 `${config.home.homeDirectory}/nix-config/dotfiles/...`，
 所以仓库必须留在 `~/nix-config`；换目录要同步改 `modules/home/` 下的 `nvim.nix`、`ghostty.nix`、
-`foot.nix`、`media.nix`、`niri.nix`、`yazi.nix`、`umbriel.nix`、`starship.nix`。
+`foot.nix`、`media.nix`、`niri.nix`、`yazi.nix`、`starship.nix`。
 
 目录级 out-of-store 软链（`~/.config/<app>` 整体指向仓库目录）除了"改完不用 rebuild"，还有一个硬需求：
 **noctalia 的主题模板要往这些目录里写文件**（niri 的 `noctalia.kdl` 与 `config.kdl` 里的 include 行、
-foot 的 `themes/noctalia` 与 `foot.ini` 的 include 行、umbriel 的 `noctalia.toml`、ghostty 的
-`themes/noctalia`）。指向只读 store 的软链会让这些写入直接失败（和 rime 是同一类坑，见第 6 节），
+foot 的 `themes/noctalia` 与 `foot.ini` 的 include 行、ghostty 的 `themes/noctalia`）。指向只读 store 的软链会让这些写入直接失败（和 rime 是同一类坑，见第 6 节），
 所以这几个目录一律软链到工作区 —— 生成的文件因此也落在仓库里（哪些该进版本库、哪些刻意忽略，
 见下一小节）。
 
@@ -173,13 +169,12 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
 | `niri` | `dotfiles/niri/noctalia.kdl` | 往 `config.kdl` 追加 `include "noctalia.kdl"` |
 | `foot` | `dotfiles/foot/themes/noctalia` | 往 `foot.ini` 插 `include=…` 行 |
 | `ghostty` | `dotfiles/ghostty/themes/noctalia` | 往 `config` 追加/改写 `theme = noctalia`（config 是手写 + 会被改写，照旧跟踪） |
-| `umbriel` | `dotfiles/umbriel/noctalia.toml` | 重写 `config.toml` 的 `[include] files` 行 |
 | `yazi`（**社区**模板） | `dotfiles/yazi/theme.toml`、`dotfiles/yazi/flavors/noctalia.yazi/` | `apply.sh` 会整份覆盖 `theme.toml` |
 
 - **不要**写 `**/noctalia` / `**/noctalia.*` 这种宽规则：它会连带命中手写的 `dotfiles/noctalia/` 目录，
   而 noctalia 会把那个目录下所有 `*.toml` 合并加载 —— 被忽略就等于"改了配置不生效 / 提交时漏文件"。
 - 代价：这些文件正是各配置里 include 的目标，所以**全新 clone（或 `git clean -xdf`）之后必须先跑一次
-  noctalia 主题**，否则 niri / foot 报 include 缺失、umbriel 直接起不来、yazi 掉回默认主题。
+  noctalia 主题**，否则 niri / foot 报 include 缺失、yazi 掉回默认主题。
 - 只影响运行时渲染、不影响 flake 求值：flake 源码本来就不含未跟踪/被忽略的文件，而运行时读的是
   out-of-store 软链指向的工作区。
 - **`dotfiles/starship/starship.toml` 也属于"被 noctalia 注入"的那一类**，但它走的是另一套办法：
@@ -324,7 +319,7 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
 3. 只有单 host / 单 user：新增主机要改 `flake.nix` 的 outputs，并考虑把 `username`、`system` 参数化。
 4. 桌面启动项（`dotfiles/niri/startup.kdl`）里有 `ydotoold`、`polkit-gnome` 等，
    它们并不都由这份 flake 安装 —— 排查"命令找不到"时先确认是 Nix 装的还是手工装的
-   （`clash-verge` 由 `modules/nixos/clash-verge.nix` 装，走 serviceMode + `clash-verge` 组；
+   （`GUI.for.SingBox` 由 `modules/home/apps.nix` 装；
    `foot --server` 里的 foot 由 `modules/home/foot.nix` 装，见第 13 条）。
    通知（`org.freedesktop.Notifications`）和剪贴板历史现在由 noctalia 接管，不要再装 mako/dunst/cliphist。
 5. 截图**不依赖** grim / slurp（这两个包这份 flake 没装，`dotfiles/niri/keys.kdl` 里曾经
@@ -352,8 +347,7 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
      （`custom-shader = shader/cursor_warp.glsl` 实测就这样静默失效过），`themes/` 读到的也会是
      仓库外手工拷的那份。
 7. 忽略 niri 的 `machine-custom.kdl` 报错：`config.kdl` 无条件 include 它，而这个文件不进版本库
-   （`.git/info/exclude` 里挡着）。umbriel 的对应物 `machine-custom.toml` 是 `[include.optional]`，
-   缺文件静默忽略、不报错 —— 两件事无关，别混。
+   （`.git/info/exclude` 里挡着）。
 8. `modules/nixos/greetd.nix` 没有用上游的 `services.displayManager.noctalia-greeter` 模块 —— 锁定的 nixpkgs 26.05
    里只有包（`pkgs.noctalia` / `pkgs.noctalia-greeter`）没有模块。两个硬约束：greeter 只读
    `/var/lib/noctalia-greeter/greeter.toml`（用 tmpfiles `L+` 软链进 store），且它靠 `XDG_DATA_DIRS`
@@ -371,8 +365,8 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       `binding="weak"` 的 `sans-serif`，用默认的 `qual="any"` 会把显式 family 请求（`Maple Mono NF CN` /
       `DejaVu Sans` / …）也判成中文/sans-serif，实测 `fc-match` 全部返回霞鹜文楷。
     - 请求带不带 `lang=zh` 取决于**进程的 locale**：niri 会话里由 systemd/D-Bus 拉起的进程是 `en_US`，
-      umbriel 会话（`[environment] LANG=zh_CN.UTF-8` 会发布到 user manager 和 D-Bus）里几乎全是 `zh` ——
-      同一份配置在两个会话里字体不一样是预期行为，不是配置没生效。
+      只有 niri 自己 spawn 的子进程才继承 `environment {}`。排查时用
+      `tr '\0' '\n' < /proc/<pid>/environ | grep LANG` 看进程真实环境。
 12. zen-browser 在 nixpkgs 26.05 里**不存在**，用 `inputs.zen-browser` 那个社区 flake：两个 follows 都要加
     （nixpkgs follows 是为了 autoPatchelfHook 链到版本匹配的系统库，home-manager follows 是为了它的
     mkFirefoxModule 语义跟本地 HM 一致）。装出来的命令是 `zen-beta`，不带包装的 `zen` 不要直接用。
@@ -388,54 +382,45 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       跑 `noctalia config validate`，键名写错直接 build 失败（这是好事）；
     - 运行时配置分两层：`~/.config/noctalia/*.toml`（仓库软链，只读）优先级低，
       `~/.local/state/noctalia/settings.toml`（GUI/IPC 写的）优先级高 —— 改了仓库配置不生效时先看/删后者；
-    - **模板选择也在 state 层**：真正生效的是 `settings.toml` 的 `[theme.templates]`（现在是
-      `builtin_ids = [ … "umbriel" ]` + `community_ids = [ "telegram", "yazi" ]`），仓库那份
+    - **模板选择也在 state 层**：真正生效的是 `settings.toml` 的 `[theme.templates]`（现在
+      `builtin_ids` 里含 niri / foot / ghostty / starship 等 + `community_ids = [ "telegram", "yazi" ]`），仓库那份
       `dotfiles/noctalia/config.toml` 里的列表只是低优先级默认值。判断"某个模板会不会跑、会写哪些文件"，
       要去看 state 文件 + `~/.local/state/noctalia/community-templates/`；
     - 模板的渲染产物**不入库**（`.gitignore` 按路径忽略，清单见第 5 节），starship 的运行中配置
       （原始版另存 `dotfiles/starship/starship.toml.orig`）也在其中；唯一例外是 `dotfiles/ghostty/config`：
       它照旧跟踪，因为 noctalia 只往里面改/加一行 `theme = noctalia`，其余全是手写内容（见第 5 节）；
     - 系统 nixpkgs 26.05 里虽然有 `pkgs.noctalia`，但版本比上游 flake 旧、也没有模块，不要混用。
-15. umbriel 是 noctalia 官方的 wlroots 合成器，**只是会话选择器里的可选测试会话**（greetd 的
-    `session.default` 仍是 `niri`）。要点：
-    - 上游 pin 的是 nixos-unstable，**不加** `inputs.nixpkgs.follows`（它要 wlroots 0.20.1+ / C++23），
-      也没有 cachix —— 首次 switch 要本地编译 umbriel + `xdg-desktop-portal-umbriel`，很慢；
-    - 输入 URL 用 `git+https://` 而不是 `github:`（后者走 `api.github.com`，未认证 60 次/小时的限额一满
-      `nix flake lock` 就 403）；
-    - 配置是 `dotfiles/umbriel/*.toml`（从 niri 的 KDL 逐条翻译，差异清单在 `dotfiles/umbriel/README.md`），
-      键名随上游版本变，改完先 `umbriel config validate -c ~/.config/umbriel/config.toml`（子命令是
-      `config validate`，`umbriel validate` 只打印 help；**warning 也算 exit 1**，目标状态是 0 warning）；
-      已经踩过两次改名：`width/height` → `extent`（`e08cc76`）、animation 段的 `shader = "路径"`
-      → `[effects.preset.*]` + `effect = "名字"`（`82b25e0` 那次全量 `nu` 带进来，症状是自定义动画
-      静默失效、`umbriel effects` 的 Presets 表为空；迁移写法见 README 第 6 节）；
-    - `modules/home/umbriel.nix` 刻意不 import 上游 `homeModules.default`：`programs.umbriel.settings` 只能写
-      单文件、挡不住 `[include]` 引用的同目录文件，而且它会把 umbriel 再装进 `home.packages`。
-16. 光标主题统一成 `Bibata-Modern-Ice`、尺寸 24，**四处字面量必须一致**：
+15. GUI.for.SingBox（`modules/home/apps.nix`）：sing-box 的图形壳，也是现在唯一常驻的代理前端。
+    - **包必须取 unstable**：26.05 里 pin 的 1.23.2 上游已删 tag（`git/ref/tags/v1.23.2` → 404），
+      `fetchFromGitHub` 永久失败，rebuild 会停在 "cannot download source from any mirror"；
+      unstable 现在是 1.27.0，tag 还在；
+    - 这个包只给壳，sing-box 内核由 GUI 运行时自己下载到 `~/.config/GUI.for.SingBox/`（上游给 Linux
+      打了 XDG 路径补丁），所以第一次启动需要能连上 GitHub 拉内核；
+    - 它不在 cache.nixos.org 上（`meta.hydraPlatforms = [ ]`），首次 rebuild 要本地编 pnpm 前端 +
+      Go/wails，很慢（是编译，不是下载，别指望换镜像能加速）；
+    - GUI 由 `dotfiles/niri/startup.kdl` 的 `spawn-at-startup "GUI.for.SingBox"` 拉起；
+    - 代理的 mixed-port 统一是 **10800**（HTTP / SOCKS5 共用）：`modules/home/shell.nix` 的
+      `vpn` 别名、`modules/home/noctalia.nix` 的 `noctalia-proxy`、`dotfiles/niri/environment.kdl`
+      里的注释都指它。改端口要一起改；
+    - 它不开系统代理（非 GNOME 桌面也不该依赖 gsettings），所以需要外网的程序（nix 命令、noctalia、
+      kubectl 等）各自显式指向 mixed-port。
+16. 光标主题统一成 `Bibata-Modern-Ice`、尺寸 24，**三处字面量必须一致**：
     `modules/nixos/icons.nix`（装包，system 级是为了 greeter 用户也解析得到）、`modules/nixos/greetd.nix`
     （`greeter.toml` 的 `cursor.theme` / `cursor.size`）、`dotfiles/niri/environment.kdl` 的
-    `XCURSOR_THEME` / `XCURSOR_SIZE` + `config.kdl` 的 `cursor { xcursor-size 24 }`、
-    `dotfiles/umbriel/config.toml` 的 `[input.cursor].theme`/`size` 与 `[environment]` 里的同名变量。
+    `XCURSOR_THEME` / `XCURSOR_SIZE` + `config.kdl` 的 `cursor { xcursor-size 24 }`。
     不设 `XCURSOR_THEME` 时 xcursor 会去找名为 `default` 的主题（本机没有），于是合成器自己画的
     边缘拖拽/移动光标、以及 Qt / XWayland / Electron 各自回退到内置箭头，看着就是"光标混用"。
-    `[environment]` / niri 的 `environment {}` **只在会话启动时生效**，改完要重开会话。
-17. clash-verge 的**包**来自 unstable、**模块**仍是 26.05 的 —— 这是"单个包吃 unstable"的标准姿势
-    （wechat 走同一套，见第 19 条）：
+    niri 的 `environment {}` **只在会话启动时生效**，改完要重开会话。
+17. 单个包吃 unstable 的标准姿势（wechat 和 gui-for-singbox 都走这套，见第 15、19 条）：
     - `flake.nix` 里有第二个 nixpkgs input `nixpkgs-unstable`（`nixos-unstable`），**不加** follows，
       只 `import` 成一个独立实例 `pkgsUnstable`，经 `specialArgs` 传给系统模块、经
-      `home-manager.extraSpecialArgs` 传给用户模块（两边都要给，用户侧的 wechat 就是这么拿到的）。
+      `home-manager.extraSpecialArgs` 传给用户模块（两边都要给）。
       **不要**把它接到 `nixpkgs.overlays`（会静默替换全仓库对该包的引用）、也不要顺着它把系统迁到 unstable；
-    - `pkgsUnstable` 的 `config` 里只放行 `wechat` 一个 unfree 名字（它是闭源二进制），clash-verge
-      是 `gpl3Only`、不涉及 unfree。别图省事写成 `allowUnfree = true`：那样这个实例就失去
+    - `pkgsUnstable` 的 `config` 里只放行 `wechat` 一个 unfree 名字（它是闭源二进制），
+      gui-for-singbox 是 `gpl3Only`、不涉及 unfree。别图省事写成 `allowUnfree = true`：那样这个实例就失去
       "新 unfree 包进来直接构建报错"的哨兵作用了；
-    - `modules/nixos/clash-verge.nix` 只覆盖 `programs.clash-verge.package`（26.05 = 2.4.7，unstable = 2.5.2）；
-    - 模块级差异只有两处：unstable 的模块给服务加了 `StateDirectory = "clash-verge-service"`
-      （本仓库在 `clash-verge.nix` 里用 `lib.mkIf` 自己补上了，否则 `ProtectSystem = "strict"` 下
-      新版服务端写 `/var` 会失败），以及 tunMode 的 `checkReversePath` 断言 / 默认值
-      （本仓库不用 tunMode，无影响）。IPC socket 路径两版一致
-      （`/run/clash-verge-rev/service.sock`，走模块已有的 `RuntimeDirectory`），所以 GUI 与 service
-      不会跨版本错配 —— 两者都来自 `pkgsUnstable.clash-verge-rev` 同一个包；
-    - 代价：store 里多一份 GTK/WebKit 闭包（挂 GC root，不会自动清）；`clash-verge-rev` 是
-      Rust(Tauri) + pnpm 前端构建，unstable channel 未必构建它，首次 switch 可能本地编译十几分钟；
+    - 代价：store 里多一份 GTK/WebKit 闭包（挂 GC root，不会自动清）；gui-for-singbox 是
+      Vue3 + Wails/WebKitGTK，不在 cache.nixos.org，首次 switch 可能本地编译；
     - unstable 的 pin 只在 `nix flake update`（不带参数）时移动，`nix flake update nixpkgs`
       不会碰它 —— 想控节奏就手动 `nix flake update nixpkgs-unstable`。
 18. 系统里**唯一的 swap 是 zram，磁盘上没有 swap** —— 这是刻意的，不是当年装系统时漏配：
@@ -446,8 +431,8 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       `/etc/systemd/zram-generator.conf`（`zram-size = 50 / 100 * ram`、zstd、`swap-priority = 5`），
       30Gi 内存 → 15.3Gi 虚拟 swap。它**不预留内存**（空闲约 20KB 内核内存，实测压测 1.2G 峰值也只
       多占 ~10MB），真实容量受物理内存限制（zstd 对匿名页一般 2.5~3.5:1，全填满约吃 5Gi）——
-      所以它是"吸收内存尖峰、推迟 OOM"的保险，**不是**额外内存。本地编译（umbriel / clash-verge
-      首次 switch 的 rustc/gcc）和 Chrome / Zen / Electron 的峰值正是靠它兜住；
+      所以它是"吸收内存尖峰、推迟 OOM"的保险，**不是**额外内存。本地编译（gui-for-singbox
+      首次 switch 的 Go/wails）和 Chrome / Zen / Electron 的峰值正是靠它兜住；
     - `boot.kernel.sysctl."vm.swappiness" = 100`：zram 上压缩一页比丢一页 page cache 划算，
       默认的 60 会让内核倾向丢文件缓存而不去压冷匿名页，等于把 zram 闲置着；
     - **代价：不能休眠**（`/sys/power/state` 里有 `disk`，但 cmdline 无 `resume=`、也没有持久化
@@ -497,7 +482,7 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
     按 Zen4 编；8945H 是 Zen4 / family 25，这一档真吃得到）。四个要点：
     - **`overlays.pinned` 只往 `pkgs` 里多塞一个 `cachyosKernels` 属性，不替换本仓库的 nixpkgs**
       （上游实现就是 `final: prev: { cachyosKernels = self.legacyPackages.…; }`，根本不理 `prev`），
-      所以 home-manager 26.05 / noctalia / umbriel 的 pin 一个都不动，也不会全系统重编。**别换成
+      所以 home-manager 26.05 / noctalia 的 pin 一个都不动，也不会全系统重编。**别换成
       `overlays.default`**：那个会拿我们的 nixpkgs 编内核，hash 与上游缓存对不上就得本地跑
       Clang+ThinLTO。同理**别加 `inputs.nixpkgs.follows`**（上游 README 明确要求，补丁是按特定内核
       版本准备的），并且用 `release` 分支而不是默认分支（前者永远指向 CI 已构建、缓存里有的提交）；
@@ -508,7 +493,7 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       `amd_dynamic_epp=enable`，也别上 SCX / BORE / BMQ / RT 和常驻 performance governor：
       这台机器是日常 + 开发，EPP 交给 `power-profiles-daemon` 切；
     - **缓存挂哪个 substituter 是决定性的，别想当然**：作者自己的 `attic.xuyh0120.win` 在本机
-      **只有走 clash 的 10800 才连得上、直连不通**，而 `cache.xinux.uz`（上游 README 列的备用镜像）、
+      **只有走代理的 10800 才连得上、直连不通**，而 `cache.xinux.uz`（上游 README 列的备用镜像）、
       `cache.nixos.org`、`noctalia.cachix.org` 都**直连可达**。为什么这要紧：`modules/home/shell.nix`
       里 `nr`/`nb`/`nu`/`nup` 的代理**只作用于客户端**（flake 输入抓取），而**下载 store 路径的是
       `nix-daemon`** —— 它由 systemd 拉起、不继承任何 shell 变量（`DefaultEnvironment` 为空、
@@ -517,7 +502,7 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       可达的镜像则完全不用管。代价是镜像的 narinfo **重新签名**（整个文件只有 `cache.xinux.uz`
       一条 `Sig`），信的是镜像维护者而非上游 CI 作者，上游 README 也声明不保证它的安全与可用性。
       想换回 attic 只信一把 key，得先让 daemon 够得到它：开 TUN，或给 daemon 配代理（并把
-      `cache.nixos.org` / cachix 放进 `no_proxy`，否则 clash 没起时连它们一起断）。
+      `cache.nixos.org` / cachix 放进 `no_proxy`，否则代理没起时连它们一起断）。
       排查手法：`nix eval --raw …kernel.drvPath` 取 hash，再分别**直连**和**走代理**测
       `curl -o /dev/null -w '%{http_code}' <substituter>/<hash>.narinfo`，就能看出这个缓存到底谁
       够得到。注意别用 `nix path-info --store <cache> <path> && echo ok` 在循环里判断 —— 它会误报
@@ -565,7 +550,7 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       协商得成。接线只改**接口级**的偏好键
       `xdg.portal.config.niri."org.freedesktop.impl.portal.ScreenCast" = "wlr"`（按 `portals.conf(5)`，
       接口级的键优先于 `default`）。**不要**去 `mkForce xdg.portal.extraPortals`：它是列表合并，
-      mkForce 会连带冲掉 umbriel 模块 `+=` 进来的 `xdg-desktop-portal-umbriel`；也**不要**改
+      mkForce 会连带冲掉其它模块通过 `+=` 加进来的 portal；也**不要**改
       `config.niri.default = [ "gnome" "gtk" ]`（nixpkgs 的 `programs.niri` 模块写死的，动它会影响
       Screenshot / FileChooser 等所有接口）。portal-gnome 照旧装着，照旧管 RemoteDesktop 等；
     - 代价一：**没有窗口共享了**。xdpw 的窗口捕获要 `ext-image-copy-capture-v1`，niri 26.04 没实现
@@ -632,7 +617,7 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
     `java-test`、`google-java-format`、`ruff` 都属此类；前三个已从 `ensure_installed` 摘掉，
     `google-java-format` 改由 nixpkgs 提供。`download.eclipse.org` / `projectlombok.org` /
     `registry.npmjs.org` / `pypi.org` / `proxy.golang.org` 可达，所以 jdtls 兜底、vtsls、
-    basedpyright、debugpy、Go 那批工具是能装的。clash 的混合端口是 **10800**（不是 7890），
+    basedpyright、debugpy、Go 那批工具是能装的。代理的混合端口是 **10800**（不是 7890），
     要救 GitHub 那些包得给 nvim 配 `https_proxy`。
 
     顺带两个同源坑：`mason-lspconfig.nvim` 已是 **v2**，`setup()` 只认 `ensure_installed` /
@@ -761,5 +746,5 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
 2. **加包**：优先用 `programs.*` 模块；没有再退到 `home.packages` / `environment.systemPackages`（用 `with pkgs;`）。
 3. **新模块**：写文件后必须在 `home/keith/default.nix` 或 `hosts/nixos-adol/default.nix` 的 `imports` 里注册 —— Nix 不会自动发现。
 4. **风格**：2 空格缩进、nixfmt-rfc-style；函数头写成 `{ pkgs, ... }:`，空一行再写 `{`；注释用中文，解释「为什么」而不是「做了什么」。
-5. **验证**：先 `nix eval ...toplevel.drvPath`；再按需 `nixos-rebuild build` / `switch`。走 store 软链或构建期读取的改动（`tmux`、`rime`、`noctalia`、`fontconfig`）**必须** rebuild 才生效；`nvim` / `ghostty` / `foot` / `mpv` / `niri` / `yazi` / `umbriel` / `starship` 是 out-of-store 软链，保存即生效（见第 5 节表）。
+5. **验证**：先 `nix eval ...toplevel.drvPath`；再按需 `nixos-rebuild build` / `switch`。走 store 软链或构建期读取的改动（`tmux`、`rime`、`noctalia`、`fontconfig`）**必须** rebuild 才生效；`nvim` / `ghostty` / `foot` / `mpv` / `niri` / `yazi` / `starship` 是 out-of-store 软链，保存即生效（见第 5 节表）。
 6. **提交**：仓库历史是简短自由格式、无 CI。一次提交只做一件事，别把 `flake.lock` 的大范围更新和功能改动混在一起。

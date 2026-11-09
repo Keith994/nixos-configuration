@@ -1,8 +1,8 @@
 { pkgs, ... }:
 
 let
-  # clash-verge 的 mixed-port（= clash-verge-rev config.yaml 里的 mixed-port）：HTTP 与 SOCKS5
-  # 共用同一个端口，所以 http:// / socks5:// 两种写法都通。全仓库统一成 http://，
+  # 外部代理（GUI.for.SingBox 等）的 mixed-port：HTTP 与 SOCKS5 共用同一个端口，
+  # 所以 http:// / socks5:// 两种写法都通。全仓库统一成 http://，
   # 免得同一个端口出现两种 scheme（端口值同时被 modules/home/noctalia.nix 引用，改要一起改）。
   proxy = "http://127.0.0.1:10800";
 
@@ -12,7 +12,7 @@ let
   proxyEnv = "http_proxy=${proxy} https_proxy=${proxy} all_proxy=${proxy}";
 
   # 本机与内网不走代理，取值与 modules/home/noctalia.nix 的 noctalia-proxy 保持一致，
-  # 否则访问 localhost / 局域网服务也会被塞进 clash。
+  # 否则访问 localhost / 局域网服务也会被塞进代理。
   noProxy = "localhost,127.0.0.1,::1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12";
 in
 {
@@ -110,7 +110,7 @@ in
 
       # NixOS
       # nr / nb / nu / nup 走代理：它们会抓 flake 输入。nc 故意不加 —— 输入都在 store 里时它不需要
-      # 网络，留一条 clash 没起时也能用的路（代理端口没人监听时，带代理的命令会直接连接失败）。
+      # 网络，留一条代理没起时也能用的路（代理端口没人监听时，带代理的命令会直接连接失败）。
       nr = "sudo env ${proxyEnv} NO_PROXY=${noProxy} nixos-rebuild switch --flake ~/nix-config#nixos-adol";
       nb = "sudo env ${proxyEnv} NO_PROXY=${noProxy} nixos-rebuild build --flake ~/nix-config#nixos-adol";
       nc = "nix flake check ~/nix-config";

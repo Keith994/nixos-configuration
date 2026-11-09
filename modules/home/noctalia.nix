@@ -1,15 +1,14 @@
 { inputs, config, pkgs, ... }:
 
 let
-  # 只让 noctalia 自己走代理：它要拉天气 / Wallhaven 这类外网 API，而 clash-verge 没开
-  # 系统代理（verge.yaml 里 enable_system_proxy = false、enable_tun_mode = false），
-  # 所以需要外网的程序必须自己指向 mixed-port。端口取值同 clash-verge-rev 的
-  # config.yaml `mixed-port` 与 modules/home/shell.nix 里的 vpn 别名 —— 改端口要一起改。
+  # 只让 noctalia 自己走代理：它要拉天气 / Wallhaven 这类外网 API，而外部代理
+  # 没有开系统代理，所以需要外网的程序必须自己指向 mixed-port。端口取值同
+  # modules/home/shell.nix 里的 vpn 别名 —— 改端口要一起改。
   proxy = "http://127.0.0.1:10800";
   socksProxy = "socks5://127.0.0.1:10800";
 
   # 特意做成 wrapper，而不是在 dotfiles/niri/environment.kdl 里给整个 niri 会话导出，
-  # 也不是写进全局环境：niri 及其它 spawn-at-startup 项（clash-verge / foot / fcitx5）
+  # 也不是写进全局环境：niri 及其它 spawn-at-startup 项（GUI.for.SingBox / foot / fcitx5）
   # 都不带代理变量，只有 noctalia 进程树带。
   # 已知代价：noctalia 的子进程会继承，所以从 noctalia launcher 里启动的程序也会走代理。
   noctalia-proxy = pkgs.writeShellScriptBin "noctalia-proxy" ''

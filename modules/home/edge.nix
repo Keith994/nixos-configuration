@@ -11,8 +11,8 @@
     enable = true;
 
     settings.k9s = {
-      # 默认 2 秒一次全量刷新。集群多半在远端、kubectl 还要走 clash 代理
-      # （见 modules/nixos/clash-verge.nix），每次刷新就是一轮 API 往返，
+      # 默认 2 秒一次全量刷新。集群多半在远端、kubectl 还要走代理
+      # （见 modules/home/shell.nix 的 vpn 别名），每次刷新就是一轮 API 往返，
       # 放宽到 5 秒能少打一半无用请求。
       refreshRate = 5;
 

@@ -1,8 +1,0 @@
-# ─────────────────────────────────────────────────────────────────────────────
-[output.eDP-1]
-# niri: mode "2880x1800@120.000" / scale 1.6 / transform "normal"
-# （niri 那边 position 是注释掉的 = 自动排布，这里同样不写 position）
-mode = "2880x1800@120"
-scale = 1.6
-transform = "normal"
-workspaces = [ "1", "2", "3" ]

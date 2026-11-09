@@ -24,13 +24,10 @@
 #
 # 代价：下面这些文件正是各配置 include 的目标，全新 clone（或 git clean -xdf）
 # 之后必须先跑一次 noctalia 主题，否则 niri / foot 报 include 缺失、
-# umbriel 直接起不来、yazi 掉回默认主题。见 AGENTS.md 第 5 节。
+# yazi 掉回默认主题。见 AGENTS.md 第 5 节。
 /dotfiles/niri/noctalia.kdl
 /dotfiles/foot/themes/noctalia
 /dotfiles/ghostty/themes/noctalia
-/dotfiles/umbriel/noctalia.toml
-# Mod+F 在浮动 / 平铺间切换时由 float.sh 短暂生成，动画结束后删除。
-/dotfiles/umbriel/float-animation.toml
 # yazi 是 noctalia 的**社区**模板（state 层 community_ids 里的 "yazi"）：
 # 模板渲染 flavors/noctalia.yazi/，它的 apply.sh 还会整份覆盖 theme.toml。
 /dotfiles/yazi/theme.toml
