@@ -118,7 +118,7 @@ nixfmt <file.nix>
 | `niri.nix` | 整个 `dotfiles/niri` 目录 out-of-store 软链（noctalia 的 niri 模板要往这个目录写 `noctalia.kdl` 和 include 行，见第 5 节） |
 | `noctalia.nix` | `inputs.noctalia` 的 `programs.noctalia` 模块 + `dotfiles/noctalia/config.toml`（构建期 validate，见第 8 节第 14 条） |
 | `rime.nix` | 见第 6 节「Rime 特例」 |
-| `devtools.nix` | go / rustc / cargo / nodejs（24.x）/ yarn / **pnpm_10** / lazygit / lazydocker / trash-cli / tree-sitter 等。pnpm 刻意钉 10 而不是默认的 11：外部 pnpm 工程的锁文件多是 `lockfileVersion 9.0`，11 会改写它（10 被 nixpkgs 标成 insecure，放行写在 `base.nix`，见第 8 节第 24 条）。Java 一组：`javaJdk`(jdk21) + `JAVA_HOME`、maven、gradle，外加 **`jdt-language-server`**（nvim 的 jdtls 本体，经 `JDTLS_HOME` 暴露）和 **`google-java-format`**（conform 用），后两个为什么不走 mason 见第 8 节第 23 条 |
+| `devtools.nix` | go / **`rustup`**（rustc / cargo / rust-analyzer / rustfmt / clippy 全由它管，见第 8 节第 26 条）/ nodejs（24.x）/ yarn / **pnpm_10** / lazygit / lazydocker / trash-cli / tree-sitter 等。pnpm 刻意钉 10 而不是默认的 11：外部 pnpm 工程的锁文件多是 `lockfileVersion 9.0`，11 会改写它（10 被 nixpkgs 标成 insecure，放行写在 `base.nix`，见第 8 节第 24 条）。Java 一组：`javaJdk`(jdk21) + `JAVA_HOME`、maven、gradle，外加 **`jdt-language-server`**（nvim 的 jdtls 本体，经 `JDTLS_HOME` 暴露）和 **`google-java-format`**（conform 用），后两个为什么不走 mason 见第 8 节第 23 条 |
 | `edge.nix` | 容器 / k8s 一组：`programs.k9s`（refreshRate 放宽到 5s + 鼠标滚轮）、HM 的 `services.podman`（**只做 rootless**，不碰 docker socket；`/etc/subuid` 与 setuid `newuidmap` 本机已具备）、`helm` / `kubectl` / `kubectl-convert` / `kubectx`（HM 没有 `programs.helm` / `programs.kubectl`，只能装包） |
 | `iot.nix` | 物联网 / 串口 / MQTT / Redis 一组：`mqttui`、`mosquitto`（只要客户端）、**`redis`**（只要 `redis-cli`）、`mbpoll`、`picocom`（keith 不在 `dialout` 组，现在要 sudo）、`socat`。broker 与 Redis server 都不走 NixOS service，统一在 docker 里（见 `deploy/` 那节） |
 | `network.nix` | 网络排查一组：`nmap`（connect 扫描不需要特权）、`iperf3`（只当客户端，5201 没放行）、`grpcurl`。抓包那两个在系统层，见 `modules/nixos/packet-capture.nix` |
@@ -758,6 +758,26 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
     支持，而且只在设了变量的进程里生效（`nix-daemon` 更是完全不继承 shell 变量，同第 21 条）。
     备选方案是换成 nixpkgs 的 `marksman`（`dotnetCorePackages` 打包，自己链好 icu，类似第 23 条
     jdtls 的做法），代价是要把 mason 那份从 `ensure_installed` 摘掉并保证 mason 的 `bin/` 不遮蔽它。
+
+26. rust（`modules/home/devtools.nix`）走 **rustup**，不再是 `pkgs.rustc` / `pkgs.cargo`。
+    - **不能并存**：`home.path` 是 `buildEnv`（没传 `ignoreCollisions`），`/etc/profiles/per-user/keith/bin`
+      里的 rustc/cargo 会永远排在 `~/.cargo/bin` 前面，rustup 的 shim 等于没装；所以
+      `home.packages` 里只有 `pkgs.rustup`，PATH 靠 `home.sessionPath = [ "$HOME/.cargo/bin" ]`
+      （HM 的 sessionPath 是 prepend）前插；
+    - **rust-analyzer / rustfmt / clippy 也走 component**，别从 nixpkgs 或 mason 装：`rustaceanvim`
+      和 `conform` 都按 PATH 找，这样三者与 toolchain 严格对齐。改之前本机 `rust-analyzer`
+      根本**哪儿都没有**（nix 没装、mason 的 `packages/` 里也没有），`lang/rust.lua` 的
+      `vim.lsp.enable("rust-analyzer")` 一直是空转。codelldb 仍旧不可用（GitHub Releases 不通，见第 23 条）；
+    - **首次激活后要手工初始化一次**（在仓库外，`git status` 看不到）：
+      `rustup-init -y --no-modify-path && rustup default stable && rustup component add rust-analyzer rustfmt clippy`。
+      `--no-modify-path` 别省：PATH 已由 `sessionPath` 管，让 rustup 改 zshrc 会重复；
+    - 官方 toolchain 是动态链接的预编译 ELF（解释器 `/lib64/ld-linux-x86-64.so.2`），能跑靠
+      `modules/nixos/compat.nix` 的 `programs.nix-ld`（见第 25 条），链接器 `cc`/`gcc`/`ld` 由
+      `nvim.nix` 装的 gcc 提供；
+    - **代价**：rust 版本从此不跟 `flake.lock` 走（由 `rustup default` / 项目 `rust-toolchain.toml`
+      决定，换机器要重跑上面那行）；`~/.rustup` 不受 nix GC 管，一个带 RA + src 的 toolchain 约
+      1–1.5 GB，多装几个要自己 `rustup toolchain uninstall`；工程 `nix develop` 自带的 rustc 与
+      shim 谁生效取决于 PATH 顺序（direnv 前插，通常 devShell 赢）—— 冲突时先 `which rustc`。
 
 ## 9. 改动流程（checklist）
 

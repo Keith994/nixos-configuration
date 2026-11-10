@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 let
   # 换 JDK 版本只改这一行：26.05 里有 jdk8 / jdk11 / jdk17 / jdk21 / jdk25，
@@ -30,8 +30,28 @@ in
 {
   home.packages = with pkgs; [
     go
-    rustc
-    cargo
+
+    # rust 走 rustup（toolchain 落在 ~/.rustup、shim 在 ~/.cargo/bin），**不装** rustc/cargo。
+    # 两个原因：
+    # 1. 两者不能并存 —— home-manager 的 home.path 是 buildEnv 且没传 ignoreCollisions，
+    #    /etc/profiles/per-user/keith/bin 里的 rustc/cargo 会一直排在 ~/.cargo/bin 前面，
+    #    rustup 的 shim 永远不生效；
+    # 2. rust-analyzer / rustfmt / clippy 也一并不装：它们走 `rustup component add`，
+    #    版本与 toolchain 严格对齐（rustaceanvim 和 conform 都按 PATH 找，天然一致）。
+    #    改之前这台机器上 rust-analyzer 其实**哪儿都没有**（nix 没装、mason 里也没有），
+    #    lang/rust.lua 的 vim.lsp.enable("rust-analyzer") 一直是空转。
+    #
+    # 代价（接受再改）：版本从此脱离 flake.lock，由 `rustup default` / 项目 rust-toolchain.toml
+    # 决定；~/.rustup 不受 nix GC 管（一个带 RA + src 的 toolchain 约 1–1.5 GB），
+    # 要多版本得自己 `rustup toolchain uninstall`。首次激活后需要跑一次：
+    #   rustup-init -y --no-modify-path && rustup default stable \
+    #     && rustup component add rust-analyzer rustfmt clippy
+    # `--no-modify-path` 别省：PATH 由下面的 sessionPath 管，让 rustup 改 zshrc 会重复。
+    #
+    # rustup 下的官方 toolchain 是动态链接的预编译 ELF（解释器 /lib64/ld-linux-x86-64.so.2），
+    # 能跑起来靠 modules/nixos/compat.nix 的 programs.nix-ld；链接器 cc/gcc/ld 已由
+    # nvim.nix 装的 gcc 提供，不用额外补。
+    rustup
 
     # node 保持 nixpkgs 的 nodejs（24.x）：iot-edge-ui 的 CI pin 的是 node 20.9，
     # 但那个工程是 vite4 + vue3，24 上跑得动。真要严格对齐 CI 就在工程里
@@ -105,4 +125,9 @@ in
   # 这个目录下**没有 lombok.jar** —— 上游 tarball 不带，nixpkgs 也没加，
   # java.lua 那边对 lombok 有 fs_stat 守卫，缺了就静默不带，不影响启动。
   home.sessionVariables.JDTLS_HOME = "${jdtls}/share/java/jdtls";
+
+  # rustup 把 rustc/cargo/rust-analyzer/rustfmt/clippy 全做成 ~/.cargo/bin 里的 shim，
+  # 必须前插到 PATH：home.sessionPath 是 prepend，所以这里排在 /etc/profiles/.../bin 之前。
+  # （上面已经删掉 pkgs.rustc/cargo，但还是前插更稳 —— 系统闭包里别的路径也可能带 rustc。）
+  home.sessionPath = [ "${config.home.homeDirectory}/.cargo/bin" ];
 }
