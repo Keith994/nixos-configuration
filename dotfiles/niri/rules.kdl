@@ -18,9 +18,9 @@ window-rule {
 window-rule {
     match title="图片和视频"
     match title="朋友圈"
-    match title="微信"
-    exclude  app-id="wechat"
-    open-floating true
+    match app-id="wechat"
+    // open-floating true
+    open-on-workspace "1"
 }
 
 window-rule {

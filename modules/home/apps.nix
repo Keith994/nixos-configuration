@@ -46,5 +46,7 @@
     # 白名单）、cache.nixos.org 有缓存（vldgyhn7… 实测 200）、GTK3 原生 Wayland，
     # fcitx5 走 GTK 输入模块最省心。langs 里已含 zh-CN，中文界面自带，不需要 langpack。
     libreoffice-fresh
+
+    nautilus
   ];
 }

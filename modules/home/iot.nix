@@ -56,6 +56,12 @@ in
     # 客户端版本别和容器里的 server 差太远。
     redis
 
+    # MySQL 官方客户端套件（mysql / mysqldump / mysqladmin 等）。
+    # 只要客户端：本机 MySQL 服务同样走 docker（同 redis / mosquitto 的套路），
+    # 这里装 mysql84.client 是为了对齐 MySQL 8.x server 的 dump 格式；
+    # 连 MariaDB 时用它的 mysqldump 也能用，但遇到 MariaDB 专有特性会有告警。
+    mysql84.client
+
     # Redis 的 GUI 客户端（树形浏览 key、Stream/JSON/ProtoBuf 查看器、CLI 标签页、SSH/SSL/Cluster）。
     # 连本机 docker 里的那个直接填 127.0.0.1:6379 即可。命令行名是 another-redis-desktop-manager。
     ardm
