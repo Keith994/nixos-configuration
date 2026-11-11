@@ -29,10 +29,11 @@
 
   networking.hostName = "adol";
 
-  # 屏蔽 DBeaver 遥测（127.0.0.2 是 adol 自己，回环上直接吃掉请求）
-  networking.extraHosts = ''
-    127.0.0.1 stats.dbeaver.com
-  '';
+  # DBeaver 遥测屏蔽和内网服务域名映射都放在仓库外的 ~/.config/nixos/extra-hosts：
+  # 仓库是公开的，内网域名 / IP 不能入库。flake 纯求值禁止读仓库外的绝对路径，
+  # 所以对应命令都要带 --impure（nr / nb / nc / nup 已加）。文件缺失会直接 eval 失败，
+  # 新机器先 `touch ~/.config/nixos/extra-hosts`。
+  networking.extraHosts = builtins.readFile /home/keith/.config/nixos/extra-hosts;
 
   # 普通用户
   users.users.${username} = {

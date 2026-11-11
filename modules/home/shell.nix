@@ -111,9 +111,11 @@ in
       # NixOS
       # nr / nb / nu / nup 走代理：它们会抓 flake 输入。nc 故意不加 —— 输入都在 store 里时它不需要
       # 网络，留一条代理没起时也能用的路（代理端口没人监听时，带代理的命令会直接连接失败）。
-      nr = "sudo env ${proxyEnv} NO_PROXY=${noProxy} nixos-rebuild switch --flake ~/nix-config#nixos-adol";
-      nb = "sudo env ${proxyEnv} NO_PROXY=${noProxy} nixos-rebuild build --flake ~/nix-config#nixos-adol";
-      nc = "nix flake check ~/nix-config";
+      # 会求值配置的都带 --impure：hosts/nixos-adol/default.nix 要读仓库外的
+      # ~/.config/nixos/extra-hosts（纯求值禁止读绝对路径）。nu 只锁输入、不求值，不用加。
+      nr = "sudo env ${proxyEnv} NO_PROXY=${noProxy} nixos-rebuild switch --flake ~/nix-config#nixos-adol --impure";
+      nb = "sudo env ${proxyEnv} NO_PROXY=${noProxy} nixos-rebuild build --flake ~/nix-config#nixos-adol --impure";
+      nc = "nix flake check ~/nix-config --impure";
 
       # 全量更新 flake.lock。和 nr/nb 不同，它**不用 sudo**：只写 flake.lock、抓输入，不碰 store。
       # 不带参数时更新全部输入 —— 这正是 AGENTS.md 第 17 节说的会让 nixpkgs-unstable pin 移动的

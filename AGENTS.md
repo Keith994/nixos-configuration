@@ -58,19 +58,20 @@ NetworkManager 的伪用户 `nm-iodine`（容器里显示成 `redis`）。目录
 
 ```bash
 # 应用配置（= shell alias nr）
-sudo nixos-rebuild switch --flake ~/nix-config#nixos-adol
+sudo nixos-rebuild switch --flake ~/nix-config#nixos-adol --impure
 
 # 只构建不切换（= nb）
-sudo nixos-rebuild build --flake ~/nix-config#nixos-adol
+sudo nixos-rebuild build --flake ~/nix-config#nixos-adol --impure
 
 # 全量检查（= nc）
-nix flake check ~/nix-config
+nix flake check ~/nix-config --impure
 
 # 更新 flake.lock（= nu；不带参数=全部输入，也可只写 input 名，如 `nu nix-cachyos-kernel`）
+# 只锁输入、不求值，所以不用 --impure
 nix flake update --flake ~/nix-config
 
 # 只做求值的快速回归：能抓出绝大多数类型 / 选项 / import 错误，比 rebuild 快得多
-nix eval .#nixosConfigurations.nixos-adol.config.system.build.toplevel.drvPath
+nix eval .#nixosConfigurations.nixos-adol.config.system.build.toplevel.drvPath --impure
 
 # 格式化（仓库使用 nixfmt-rfc-style 风格：2 空格缩进）
 nixfmt <file.nix>
@@ -78,6 +79,11 @@ nixfmt <file.nix>
 
 沙箱提示：`nix` 需要写 `~/.cache/nix` 和 `/nix/store`。被文件沙箱挡住时可加
 `XDG_CACHE_HOME=/tmp/nixcache`；若 `/nix/store` 也不可写导致 eval 失败，那是环境限制，不是配置写错了。
+
+求值命令都带 `--impure`：`hosts/nixos-adol/default.nix` 的 `networking.extraHosts` 要读仓库外的
+`~/.config/nixos/extra-hosts`（DBeaver 遥测屏蔽 + 内网域名映射，不能进公开仓库）。flake 纯求值禁止读
+绝对路径，漏了 `--impure` 会直接 eval 失败；文件不存在同样会失败，新机器先 `touch` 一个空文件即可。
+`nu` 只锁输入、不求值，所以不用加。
 
 ## 4. 模块清单
 
@@ -309,7 +315,9 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
 ## 8. 已知问题 / 陷阱
 
 1. 仓库外的本地/密钥文件绝不入库：`~/.ai-api.zsh`（`shell.nix` source）、`~/.config/git/local.conf`（身份）、
-   `dotfiles/nvim/lua/plugins/dbs_url/`（数据库明文）。`.gitignore` 已覆盖这些，新增同类文件时同步补规则。
+   `dotfiles/nvim/lua/plugins/dbs_url/`（数据库明文）、`~/.config/nixos/extra-hosts`（DBeaver 遥测 +
+   内网域名映射，eval 期用 `builtins.readFile` 读，所以求值命令要 `--impure`，见第 3 节）。
+   `.gitignore` 已覆盖仓库内的这些，新增同类文件时同步补规则；`extra-hosts` 在仓库外，靠路径而不是 ignore 规则。
 2. `modules/home/starship.nix` 的 `configPath` 必须和 `xdg.configFile."starship.toml"` 的落点**完全一致**：
    指到不存在的路径时 starship 会**静默**回退到内置默认配置（自定义 toml 被整个忽略，看着就像"配置没生效"）。
    现在两边都是 `~/.config/starship.toml`，而它是指向 `dotfiles/starship/starship.toml` 的 out-of-store
@@ -517,7 +525,7 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
       `linux-*` 与 `linux-*-modules`，没有 `-dev`）—— 写 `^*` 要多下 3 倍多：
 
       ```bash
-      K=$(nix eval --raw ~/nix-config#nixosConfigurations.nixos-adol.config.boot.kernelPackages.kernel.drvPath)
+      K=$(nix eval --raw --impure ~/nix-config#nixosConfigurations.nixos-adol.config.boot.kernelPackages.kernel.drvPath)
       sudo nix copy --from https://cache.xinux.uz \
         --extra-trusted-public-keys "cache.xinux.uz:BXCrtqejFjWzWEB9YuGB7X2MV4ttBur1N8BkwQRdH+0=" \
         "$K^out,modules"
@@ -785,5 +793,5 @@ noctalia 的主题模板会往上面这些 out-of-store 目录里**写**文件�
 2. **加包**：优先用 `programs.*` 模块；没有再退到 `home.packages` / `environment.systemPackages`（用 `with pkgs;`）。
 3. **新模块**：写文件后必须在 `home/keith/default.nix` 或 `hosts/nixos-adol/default.nix` 的 `imports` 里注册 —— Nix 不会自动发现。
 4. **风格**：2 空格缩进、nixfmt-rfc-style；函数头写成 `{ pkgs, ... }:`，空一行再写 `{`；注释用中文，解释「为什么」而不是「做了什么」。
-5. **验证**：先 `nix eval ...toplevel.drvPath`；再按需 `nixos-rebuild build` / `switch`。走 store 软链或构建期读取的改动（`tmux`、`rime`、`noctalia`、`fontconfig`）**必须** rebuild 才生效；`nvim` / `ghostty` / `foot` / `mpv` / `niri` / `yazi` / `starship` 是 out-of-store 软链，保存即生效（见第 5 节表）。
+5. **验证**：先 `nix eval ...toplevel.drvPath --impure`；再按需 `nixos-rebuild build` / `switch`（都带 `--impure`）。走 store 软链或构建期读取的改动（`tmux`、`rime`、`noctalia`、`fontconfig`）**必须** rebuild 才生效；`nvim` / `ghostty` / `foot` / `mpv` / `niri` / `yazi` / `starship` 是 out-of-store 软链，保存即生效（见第 5 节表）。
 6. **提交**：仓库历史是简短自由格式、无 CI。一次提交只做一件事，别把 `flake.lock` 的大范围更新和功能改动混在一起。
