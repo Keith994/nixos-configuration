@@ -164,8 +164,9 @@ end
 --   3. <mason 根>/share/jdtls    —— mason 兜底
 -- 布局差异：nixpkgs 是 {plugins,features,config_linux} 且**不带 lombok.jar**；
 -- mason 是 {plugins,config} 并附带 lombok.jar（走软链指向 packages/jdtls/lombok.jar）。
--- 所以走 nix 那条路时 lombok 注解（@Data / @Builder 之类）不被识别 ——
--- 需要 lombok 就把 mason 那份提到前面，或者只依赖 mason。
+-- 注意别为了 lombok 直接切到 mason：mason 当前那份 jdtls 打包要求 Java 25，
+-- 用 JDK 21 启动会因 org.eclipse.core.filesystem 等 bundle 解析失败直接退出。
+-- 正确做法是本体继续用 nixpkgs（1.58，JDK 21 可跑），lombok 从别处借（见 lombok_jar()）。
 local function jdtls_home()
   -- 候选表**不能**写成 `{ vim.env.JDTLS_HOME, jdtls_from_path(), … }` 再交给 ipairs：
   -- JDTLS_HOME 没设时第一项就是 nil，Lua 的表成了 `{ [1]=nil, [2]="…" }`，
@@ -188,6 +189,25 @@ local function jdtls_home()
   for _, dir in ipairs(candidates) do
     if dir and dir ~= "" and vim.uv.fs_stat(dir .. "/plugins") then
       return dir
+    end
+  end
+  return nil
+end
+
+-- 找 lombok agent。本体（nixpkgs）不带 lombok.jar，但 javaagent 不必和本体同目录：
+-- 优先用本体自带的，其次借 mason 的（1.18.48，支持 JDK 21+）。
+-- 不拿 pom 里的 1.18.24：lombok < 1.18.30 在 JDK 21 上会死在
+--   "JCTree$JCImport does not have member field '... qualid'"。
+-- 缺文件就不塞（JVM 对不存在的 javaagent 会硬失败，比没有 lombok 更糟）。
+local function lombok_jar(home)
+  local candidates = { home .. "/lombok.jar" }
+  local mroot = mason_root()
+  if mroot then
+    candidates[#candidates + 1] = mroot .. "/share/jdtls/lombok.jar"
+  end
+  for _, jar in ipairs(candidates) do
+    if vim.uv.fs_stat(jar) then
+      return jar
     end
   end
   return nil
@@ -330,8 +350,8 @@ return {
           "     要重开 shell / 重登桌面才有 —— 但上面第 2 条不依赖它：~/.nix-profile/bin 是",
           "     原地更新的软链农场，`nr` 一结束 PATH 上就能解析到 jdtls，不必重启会话。",
           "  2) mason（兜底）：:MasonInstall jdtls（源是 download.eclipse.org）。",
-          "     mason 那份更新（1.63 vs nixpkgs 1.58）而且**带 lombok.jar**，",
-          "     需要 lombok 注解支持就把它排到前面。",
+          "     但 mason 当前打包要求 Java 25，JDK 21 下会 bundle 解析失败；",
+          "     只在 mtime 等场景临时用，lombok 仍可从它的 share/jdtls/lombok.jar 借。",
           "",
           "自查： :lua =vim.fn.exepath('jdtls')   :lua =require('util').mason_root()",
         }, "\n"))
@@ -340,7 +360,7 @@ return {
       end
 
       local root_dir =
-          vim.fs.dirname(vim.fs.find({ ".git", "pom.xml", ".project", "gradlew", "mvnw" }, { upward = true })[1])
+          vim.fs.dirname(vim.fs.find({ ".git" }, { upward = true })[1])
       local project_name = vim.fn.fnamemodify(root_dir, ":p:h:t")
       local workspace_dir = vim.fn.expand("$HOME/.cache/jdtls/" .. project_name)
       local cmd = {
@@ -422,13 +442,11 @@ return {
         table.insert(cmd, 2, "-Djdk.xml.totalEntitySizeLimit=0")
       end
 
-      -- lombok.jar 只有 mason 那条路才带（nixpkgs 的 jdt-language-server 不含它）。
-      -- 缺文件时 JVM 会以 "Error opening zip file or JAR manifest missing" 硬失败，
-      -- 比不带 lombok 更糟，所以先 stat 再塞。插在第 2 位（紧跟 java 可执行文件）——
-      -- -javaagent 是 JVM 参数，必须排在 -jar 之前。
-      local lombok_jar = home .. "/lombok.jar"
-      if vim.uv.fs_stat(lombok_jar) then
-        table.insert(cmd, 2, "-javaagent:" .. lombok_jar)
+      -- lombok agent：本体用 nixpkgs 时 home/lombok.jar 不存在，会退回 mason 那份。
+      -- 插在第 2 位（紧跟 java 可执行文件）—— -javaagent 是 JVM 参数，必须在 -jar 之前。
+      local agent = lombok_jar(home)
+      if agent then
+        table.insert(cmd, 2, "-javaagent:" .. agent)
       end
 
       -- 这两个 glob 以前都写成 "$MASON/..."，各错一处：
@@ -657,7 +675,7 @@ return {
 
       -- setup autocmd on filetype detect java
       vim.api.nvim_create_autocmd("Filetype", {
-        pattern = "*.java", -- autocmd to start jdtls
+        pattern = "java", -- FileType 的 pattern 匹配的是 filetype，不是文件名
         callback = function()
           -- opts.cmd 为 nil 说明上面 jdtls_home()/jdtls_launcher() 没找到本体，
           -- 那次已经弹过一条详细的错误了，别每开一个 .java 再刷一遍。
